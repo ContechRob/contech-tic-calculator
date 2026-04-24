@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contech — Total Installed Cost Comparison</title>
+<style>
+:root{
+  --color-background-primary:#ffffff;
+  --color-background-secondary:#f5f5f3;
+  --color-background-tertiary:#efede8;
+  --color-text-primary:#1a1a1a;
+  --color-text-secondary:#666660;
+  --color-border-tertiary:rgba(0,0,0,.12);
+  --color-border-secondary:rgba(0,0,0,.22);
+  --border-radius-md:8px;
+  --border-radius-lg:12px;
+  --font-sans:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);background:#f0f2f5;min-height:100vh;padding:24px 16px}
+.page{max-width:720px;margin:0 auto;background:var(--color-background-primary);border-radius:16px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+.app{padding:0}
+.hdr{display:flex;align-items:center;gap:10px;padding-bottom:1.25rem;border-bottom:0.5px solid var(--color-border-tertiary);margin-bottom:1.25rem}
+.hdr-mark{width:32px;height:32px;background:#1a4a7a;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.hdr-mark span{color:#fff;font-size:10px;font-weight:600;letter-spacing:.5px}
+.hdr-txt{font-size:16px;font-weight:600;color:var(--color-text-primary)}
+.hdr-sub{font-size:12px;color:var(--color-text-secondary);margin-top:1px}
+.card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1.25rem;margin-bottom:1rem}
+.card.ac{border-color:#1a4a7a}
+.sh{display:flex;align-items:center;gap:8px;margin-bottom:1rem}
+.sn{width:20px;height:20px;border-radius:50%;background:#1a4a7a;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#fff;flex-shrink:0}
+.st{font-size:13px;font-weight:600;color:var(--color-text-primary)}
+.ss{font-size:11px;color:var(--color-text-secondary)}
+.lbl{font-size:11px;font-weight:600;color:var(--color-text-secondary);margin-bottom:4px;letter-spacing:.2px}
+select,input[type=text],input[type=number]{width:100%;height:34px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:0 10px;font-size:13px;background:var(--color-background-primary);color:var(--color-text-primary);font-family:var(--font-sans)}
+select:focus,input:focus{outline:none;border-color:#1a4a7a;box-shadow:0 0 0 2px rgba(26,74,122,.1)}
+select.err,input.err{border-color:#E24B4A}
+.product-tiles{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.tile{border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:11px 8px;cursor:pointer;text-align:center;background:var(--color-background-primary);transition:all .15s;display:flex;align-items:center;justify-content:center}
+.tile:hover{border-color:#1a4a7a;background:#f0f5fa}
+.tile.sel{border-color:#1a4a7a;background:#E6F1FB;border-width:1.5px}
+.tile-name{font-size:13px;font-weight:600;color:var(--color-text-primary)}
+.tile.sel .tile-name{color:#0C447C}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.col-hdr{display:flex;align-items:center;gap:6px;margin-bottom:10px;padding-bottom:8px;border-bottom:0.5px solid var(--color-border-tertiary)}
+.col-badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:3px;flex-shrink:0}
+.badge-ct{background:#E6F1FB;color:#0C447C}
+.badge-cp{background:#F1EFE8;color:#444441}
+.col-title{font-size:12px;font-weight:600;color:var(--color-text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav-row{display:flex;justify-content:space-between;align-items:center;margin-top:1rem}
+.dots{display:flex;gap:5px}
+.dot{width:5px;height:5px;border-radius:50%;background:var(--color-border-secondary)}
+.dot.on{background:#1a4a7a}
+.btn{height:34px;padding:0 16px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);font-size:13px;font-weight:600;cursor:pointer;background:var(--color-background-primary);color:var(--color-text-primary);transition:all .15s;font-family:var(--font-sans)}
+.btn:hover{border-color:#1a4a7a;color:#1a4a7a}
+.btn.pri{background:#1a4a7a;color:#fff;border-color:#1a4a7a}
+.btn.pri:hover{opacity:.9}
+.btn.full{width:100%;height:38px;margin-top:1rem}
+.btn-pdf{height:34px;padding:0 16px;border:0.5px solid #1a4a7a;border-radius:var(--border-radius-md);font-size:13px;font-weight:600;cursor:pointer;background:#1a4a7a;color:#fff;display:flex;align-items:center;gap:7px;transition:opacity .15s;font-family:var(--font-sans)}
+.btn-pdf:hover{opacity:.88}
+.err-msg{font-size:11px;color:#A32D2D;margin-top:4px;display:none}
+.ref-panel{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px 12px;margin-top:10px;border:0.5px solid var(--color-border-tertiary)}
+.ref-title{font-size:11px;font-weight:600;color:var(--color-text-secondary);margin-bottom:8px}
+.ref-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.ref-item{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:7px 9px;cursor:pointer;transition:all .15s}
+.ref-item:hover{border-color:#1a4a7a}
+.ref-item.on{border-color:#1a4a7a;background:#E6F1FB}
+.ref-name{font-size:11px;font-weight:600;color:var(--color-text-primary)}
+.ref-item.on .ref-name{color:#0C447C}
+.ref-range{font-size:10px;color:var(--color-text-secondary);margin-top:1px}
+.ref-note{font-size:10px;color:var(--color-text-secondary);margin-top:8px;line-height:1.5}
+.install-ref-panel{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px 12px;margin-top:10px;border:0.5px solid var(--color-border-tertiary)}
+.install-ref-title{font-size:11px;font-weight:600;color:var(--color-text-secondary);margin-bottom:8px}
+.install-chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border:0.5px solid var(--color-border-secondary);border-radius:20px;cursor:pointer;background:var(--color-background-primary);transition:all .15s}
+.chip:hover{border-color:#1a4a7a;background:#f0f5fa}
+.chip.sel{border-color:#1a4a7a;background:#E6F1FB}
+.chip-lbl{font-size:11px;font-weight:600;color:var(--color-text-primary)}
+.chip.sel .chip-lbl{color:#0C447C}
+.chip-range{font-size:10px;color:var(--color-text-secondary)}
+.chip.sel .chip-range{color:#185FA5}
+.install-detail{margin-top:10px;padding:9px 11px;background:var(--color-background-primary);border:0.5px solid #B5D4F4;border-radius:var(--border-radius-md);font-size:11px;color:var(--color-text-secondary);line-height:1.5;display:none}
+.install-detail.show{display:block}
+.install-detail strong{font-weight:600;color:#0C447C}
+.rate-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+.rate-derived{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:8px 10px;margin-top:6px;display:flex;align-items:baseline;gap:6px;min-height:36px}
+.rate-val{font-size:18px;font-weight:600;color:#0C447C}
+.rate-unit{font-size:11px;color:var(--color-text-secondary)}
+.eq-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.eq{display:flex;align-items:center;gap:7px;padding:7px 9px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);cursor:pointer;background:var(--color-background-primary);transition:all .15s}
+.eq:hover{border-color:#1a4a7a}
+.eq.on{border-color:#1a4a7a;background:#E6F1FB}
+.eq-chk{width:14px;height:14px;border-radius:3px;border:1.5px solid var(--color-border-secondary);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.eq.on .eq-chk{background:#1a4a7a;border-color:#1a4a7a}
+.eq-inner{width:4px;height:7px;border-right:1.5px solid #fff;border-bottom:1.5px solid #fff;transform:rotate(45deg) translate(-1px,-1px);display:none}
+.eq.on .eq-inner{display:block}
+.eq-lbl{font-size:11px;color:var(--color-text-primary)}
+.eq-cost{font-size:10px;color:var(--color-text-secondary)}
+.info{font-size:11px;color:var(--color-text-secondary);background:var(--color-background-secondary);padding:7px 9px;border-radius:var(--border-radius-md);margin-top:8px}
+.divider{height:0.5px;background:var(--color-border-tertiary);margin:1rem 0}
+.jb-card{background:var(--color-background-primary);border:0.5px solid #9FE1CB;border-radius:var(--border-radius-lg);padding:1.25rem;margin-bottom:1rem}
+.jb-header-strip{background:#E1F5EE;border-radius:var(--border-radius-md);padding:8px 12px;margin-bottom:1rem;display:flex;align-items:center;gap:8px}
+.jb-icon{width:18px;height:18px;background:#1D9E75;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.jb-icon-inner{width:8px;height:8px;border:2px solid #fff;border-radius:1px}
+.jb-header-txt{font-size:12px;font-weight:600;color:#085041}
+.jb-header-sub{font-size:11px;color:#0F6E56;margin-top:1px}
+.jb-two{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px}
+.jb-col{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:12px;border:0.5px solid var(--color-border-tertiary)}
+.jb-col.ct-side{background:#E1F5EE;border-color:#9FE1CB}
+.jb-col-name{font-size:11px;font-weight:600;margin-bottom:10px;padding-bottom:6px;border-bottom:0.5px solid rgba(0,0,0,.07)}
+.jb-col.ct-side .jb-col-name{color:#085041}
+.jb-field{margin-bottom:8px}
+.jb-total{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0 0;margin-top:4px;border-top:0.5px solid rgba(0,0,0,.08);font-size:13px;font-weight:600}
+.jb-total.ct-tot{color:#085041}
+.jb-savings{background:#E1F5EE;border:0.5px solid #9FE1CB;border-radius:var(--border-radius-md);padding:8px 12px;font-size:12px;color:#085041;display:none}
+.jb-savings.show{display:flex;align-items:center;justify-content:space-between}
+.jb-savings-badge{background:#0F6E56;color:#E1F5EE;font-size:11px;font-weight:600;padding:3px 8px;border-radius:3px}
+.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem}
+.sum-col{border-radius:var(--border-radius-md);padding:12px;border:0.5px solid var(--color-border-tertiary)}
+.sum-col.ct-col{background:#E6F1FB;border-color:#B5D4F4}
+.sum-col.cp-col{background:var(--color-background-secondary)}
+.sum-col-name{font-size:12px;font-weight:600;margin-bottom:8px;padding-bottom:6px;border-bottom:0.5px solid rgba(0,0,0,.07)}
+.sum-row{display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;font-size:12px}
+.sum-lbl{color:var(--color-text-secondary)}
+.sum-val{font-weight:600;color:var(--color-text-primary)}
+.sum-total{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0 0;margin-top:4px;border-top:0.5px solid rgba(0,0,0,.1);font-size:14px;font-weight:600}
+.win-val{color:#0C447C}
+.lose-val{color:#A32D2D}
+.winner-banner{border-radius:var(--border-radius-md);padding:10px 14px;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.wbn-ct{background:#E6F1FB;border:0.5px solid #B5D4F4}
+.wbn-cp{background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary)}
+.wbn-eq{background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary)}
+.winner-txt{font-size:13px;font-weight:600;color:#0C447C}
+.winner-sub{font-size:11px;color:#185FA5;margin-top:2px}
+.wbn-cp .winner-txt,.wbn-eq .winner-txt{color:var(--color-text-primary)}
+.wbn-cp .winner-sub,.wbn-eq .winner-sub{color:var(--color-text-secondary)}
+.savings-badge{background:#0C447C;color:#E6F1FB;font-size:12px;font-weight:600;padding:4px 10px;border-radius:var(--border-radius-md);white-space:nowrap;flex-shrink:0}
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1rem}
+.stat{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px}
+.stat-lbl{font-size:10px;color:var(--color-text-secondary);margin-bottom:3px}
+.stat-val{font-size:16px;font-weight:600;color:var(--color-text-primary)}
+.stat-unit{font-size:10px;color:var(--color-text-secondary);margin-top:1px}
+.stat.hi .stat-val{color:#0C447C}
+.bars{margin:1rem 0}
+.bar-row{margin-bottom:10px}
+.bar-lbl{display:flex;justify-content:space-between;font-size:11px;color:var(--color-text-secondary);margin-bottom:3px}
+.bar-lbl span:last-child{font-weight:600;color:var(--color-text-primary)}
+.bar-track{height:7px;background:var(--color-background-secondary);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px}
+.bar-ct{background:#1a4a7a}
+.bar-cp{background:#B4B2A9}
+.proj-totals{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px 12px;margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.proj-tot-lbl{font-size:11px;color:var(--color-text-secondary);margin-bottom:2px}
+.proj-tot-val{font-size:16px;font-weight:600}
+.detail-tbl{width:100%;font-size:12px;border-collapse:collapse}
+.detail-tbl td{padding:3px 0;vertical-align:top}
+.detail-tbl td:first-child{color:var(--color-text-secondary);width:42%}
+.detail-tbl td:last-child{font-weight:600;color:var(--color-text-primary)}
+.jb-sum-block{background:#E1F5EE;border:0.5px solid #9FE1CB;border-radius:var(--border-radius-md);padding:10px 12px;margin-bottom:1rem}
+.jb-sum-title{font-size:11px;font-weight:600;color:#085041;margin-bottom:6px}
+.jb-sum-row{display:flex;justify-content:space-between;font-size:12px;padding:2px 0}
+.jb-sum-row span:first-child{color:#0F6E56}
+.jb-sum-row span:last-child{font-weight:600;color:#085041}
+.action-row{display:flex;gap:8px;margin-top:1rem;flex-wrap:wrap;align-items:center}
+@media(max-width:600px){
+  .product-tiles{grid-template-columns:repeat(3,1fr)}
+  .two-col{grid-template-columns:1fr}
+  .stat-grid{grid-template-columns:repeat(2,1fr)}
+  .summary-grid{grid-template-columns:1fr}
+  .ref-grid{grid-template-columns:repeat(2,1fr)}
+  .rate-row{grid-template-columns:1fr}
+  .jb-two{grid-template-columns:1fr}
+  body{padding:12px 8px}
+  .page{padding:16px}
+}
+</style>
+</head>
+<body>
+<div class="page">
+<div class="app">
+<div class="hdr">
+  <div class="hdr-mark"><span>CTI</span></div>
+  <div><div class="hdr-txt">Total installed cost comparison</div><div class="hdr-sub">Contech vs. competitive product — $/linear foot</div></div>
+</div>
+<div id="v-product"></div>
+<div id="v-context" style="display:none"></div>
+<div id="v-costs" style="display:none"></div>
+<div id="v-jbox" style="display:none"></div>
+<div id="v-results" style="display:none"></div>
+</div>
+</div>
+
+<script>
+const PRODUCTS=['CMP','Ultra-Flo','Slotted Drain','DuroMaxx','PVC'];
+const INSTALL_BENCHMARKS={
+  'CMP':[
+    {label:'Small diameter (12"–36")',range:'$4–$9',low:4,high:9,detail:'Standard crew with excavator. Corrugated coupling bands — fast field connection. Typical production 250–400 LF/day on straightforward sites.'},
+    {label:'Medium diameter (42"–72")',range:'$8–$16',low:8,high:16,detail:'Requires crane or large excavator. Heavier sections, slower jointing. Typical production 100–200 LF/day.'},
+    {label:'Large diameter (78"+)',range:'$14–$28',low:14,high:28,detail:'Crane required for all lifts. Structural plate assembly adds time. Typical production 50–120 LF/day.'},
+    {label:'Steep slope / headwall',range:'$10–$22',low:10,high:22,detail:'Additional forming, anchor stakes, and grade control. Inlet/outlet work adds significant labor.'},
+    {label:'Urban / congested site',range:'$12–$25',low:12,high:25,detail:'Traffic control, tight access, and saw-cutting add cost. Expect 20–40% premium over open-site work.'},
+  ],
+  'Ultra-Flo':[
+    {label:'Standard linear run',range:'$6–$12',low:6,high:12,detail:'Precast units set with excavator. Tight-tolerance jointing requires care. Typical production 150–250 LF/day.'},
+    {label:'Curved alignment',range:'$10–$18',low:10,high:18,detail:'Curved sections or field cutting needed. More labor-intensive placement. 100–180 LF/day.'},
+    {label:'Inlet integration',range:'$12–$20',low:12,high:20,detail:'Coordinating inlet structure placements with linear drain adds stop-and-start delays.'},
+    {label:'Urban / paved surface',range:'$14–$24',low:14,high:24,detail:'Saw-cutting, haul-off, and surface restoration add significant cost on top of install labor.'},
+  ],
+  'Slotted Drain':[
+    {label:'Standard installation',range:'$5–$11',low:5,high:11,detail:'Lightweight units, simple bedding, locking grate. Typical production 200–350 LF/day on open sites.'},
+    {label:'Heavy-duty / traffic-rated',range:'$8–$15',low:8,high:15,detail:'Thicker ductile iron or reinforced grate setting. More precise grade requirements.'},
+    {label:'Pavement saw-cut / restore',range:'$12–$22',low:12,high:22,detail:'Concrete or asphalt cutting, removal, and restoration adds material and labor.'},
+  ],
+  'DuroMaxx':[
+    {label:'Small diameter (12"–36")',range:'$5–$10',low:5,high:10,detail:'Gasketed bell-and-spigot — fast, tool-free connection. Lightweight reduces crane needs. 250–450 LF/day typical.'},
+    {label:'Medium diameter (42"–72")',range:'$9–$17',low:9,high:17,detail:'Lighter than RCP at equivalent size. Reduces crane cycle time. 150–250 LF/day.'},
+    {label:'Large diameter (78"+)',range:'$14–$26',low:14,high:26,detail:'Still lighter than concrete alternatives. Certified installation crew recommended. 80–150 LF/day.'},
+    {label:'Sliplining / reline',range:'$8–$20',low:8,high:20,detail:'Annular grouting and end sealing add labor. Production depends heavily on existing pipe condition.'},
+    {label:'Remote / rural site',range:'$6–$13',low:6,high:13,detail:'Lower traffic control and congestion costs. Open-trench work is faster.'},
+  ],
+  'PVC':[
+    {label:'Small diameter (4"–12")',range:'$3–$7',low:3,high:7,detail:'Solvent weld or gasketed joint. Lightweight, fast installation. Typical production 300–500 LF/day.'},
+    {label:'Medium diameter (15"–24")',range:'$6–$12',low:6,high:12,detail:'Gasketed bell-and-spigot. Requires embedment care to avoid deflection. 200–350 LF/day.'},
+    {label:'Large diameter (27"–48")',range:'$10–$20',low:10,high:20,detail:'Profile wall PVC — lighter than solid wall. Careful bedding and haunching required. 100–200 LF/day.'},
+    {label:'Underdrain / subdrain',range:'$2–$6',low:2,high:6,detail:'Perforated pipe in trench with aggregate envelope. Simple crew, high production. 400–600 LF/day.'},
+    {label:'Sliplining',range:'$7–$18',low:7,high:18,detail:'CIPP or segmental liner — production depends on host pipe diameter and condition.'},
+  ],
+};
+const GEO=[
+  {name:'Northeast',states:'ME, NH, VT, MA, RI, CT, NY, NJ, PA',low:28,high:65,note:'Rocky soil, high labor rates, urban congestion common'},
+  {name:'Mid-Atlantic',states:'MD, DE, VA, WV, DC',low:22,high:52,note:'Variable soil, moderate labor rates'},
+  {name:'Southeast',states:'NC, SC, GA, FL, AL, MS, TN, KY',low:18,high:42,note:'Sandy/clay soils, lower labor rates'},
+  {name:'Midwest',states:'OH, IN, IL, MI, WI, MN, IA, MO',low:20,high:48,note:'Clay-heavy soils, moderate trenching costs'},
+  {name:'Great Plains',states:'ND, SD, NE, KS, OK',low:16,high:38,note:'Open terrain, favorable soil, lower mobilization'},
+  {name:'South Central',states:'TX, LA, AR',low:17,high:40,note:'Expansive clay soils, humid conditions'},
+  {name:'Mountain West',states:'CO, UT, WY, MT, ID',low:24,high:58,note:'Rocky terrain, remote sites increase cost'},
+  {name:'Southwest',states:'AZ, NM, NV',low:20,high:46,note:'Caliche / hardpan common, dewatering rare'},
+  {name:'Pacific',states:'CA, OR, WA, AK, HI',low:30,high:75,note:'High labor rates, seismic zone requirements'},
+];
+const EQUIPMENT=[
+  {id:'exc',label:'Excavator',cost:2.50},{id:'crane',label:'Crane / lifting',cost:3.75},
+  {id:'vib',label:'Plate compactor',cost:0.75},{id:'trench',label:'Trench box / shoring',cost:1.80},
+  {id:'pump',label:'Dewatering pump',cost:1.25},{id:'fusion',label:'Fusion equipment',cost:2.00},
+  {id:'jt',label:'Joint / mandrel test',cost:0.50},{id:'gps',label:'GPS / survey',cost:0.40},
+  {id:'traf',label:'Traffic control',cost:1.50},{id:'haul',label:'Spoil / haul removal',cost:1.20},
+];
+const APP_TYPES=['Culvert','Storm sewer','Sanitary sewer','Irrigation','Reline / sliplining','Underdrain / subdrain'];
+const PROJ_TYPES={
+  'Transportation':['Highway / roadway drainage','Bridge approach drainage','Airport drainage','Railway drainage'],
+  'Municipal':['Municipal storm sewer system','Combined sewer overflow (CSO)','Wastewater collection','Water transmission'],
+  'Site development':['Commercial / industrial site','Residential subdivision','Parking lot drainage','Athletic field drainage'],
+  'Agricultural / rural':['Agricultural drainage / tile','Irrigation canal / conveyance','Rural road culvert','Wetland / wildlife crossing'],
+  'Infrastructure rehab':['Pipe rehabilitation / relining','Infrastructure replacement','Emergency repair'],
+  'Energy / industrial':['Oil & gas site drainage','Mining site drainage','Power plant drainage'],
+};
+
+let S={product:null,compName:'',compProduct:'',appType:'',projType:'',geo:null,installChip:null,equip:new Set(),
+  mat:{ct:0,cp:0},exc:{ct:0,cp:0},inst:{ct:0,cp:0},instRateCt:0,instRateCp:0,projLen:0,
+  jb:{ctUnit:0,ctQty:0,pcUnit:0,pcQty:0}};
+let _lastSummaryHTML='';
+
+function showView(v){['product','context','costs','jbox','results'].forEach(n=>document.getElementById('v-'+n).style.display=n===v?'block':'none');}
+function isStormSewer(){return S.appType==='Storm sewer';}
+function jbTotal(side){return side==='ct'?(S.jb.ctUnit||0)*(S.jb.ctQty||0):(S.jb.pcUnit||0)*(S.jb.pcQty||0);}
+
+function rProduct(){
+  let h=`<div class="card ac"><div class="sh"><div class="sn">1</div><div><div class="st">Select Contech product</div><div class="ss">Choose the product you are presenting</div></div></div>
+  <div class="product-tiles">`;
+  PRODUCTS.forEach(p=>{h+=`<div class="tile${S.product===p?' sel':''}" onclick="S.product='${p}';S.installChip=null;rProduct()"><div class="tile-name">${p}</div></div>`;});
+  h+=`</div>`;
+  if(S.product){
+    h+=`<div style="margin-top:1rem"><div class="lbl" style="margin-bottom:6px">Competitor information <span style="color:#A32D2D">*</span></div>
+    <div class="two-col">
+      <div><div class="lbl">Competitor company name</div><input type="text" id="cn" placeholder="e.g. Advanced Drainage Systems" value="${S.compName}" oninput="S.compName=this.value"><div class="err-msg" id="ecn">Required</div></div>
+      <div><div class="lbl">Competitor product name</div><input type="text" id="cpn" placeholder="e.g. N-12 HDPE pipe" value="${S.compProduct}" oninput="S.compProduct=this.value"><div class="err-msg" id="ecp">Required</div></div>
+    </div></div>
+    <div class="nav-row"><div class="dots"><div class="dot on"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+    <button class="btn pri" onclick="nextP()">Next: Project context ›</button></div>`;
+  }
+  h+=`</div>`;
+  document.getElementById('v-product').innerHTML=h;
+}
+
+function nextP(){
+  S.compName=(document.getElementById('cn').value||'').trim();
+  S.compProduct=(document.getElementById('cpn').value||'').trim();
+  let ok=true;
+  if(!S.compName){document.getElementById('cn').classList.add('err');document.getElementById('ecn').style.display='block';ok=false;}
+  else{document.getElementById('cn').classList.remove('err');document.getElementById('ecn').style.display='none';}
+  if(!S.compProduct){document.getElementById('cpn').classList.add('err');document.getElementById('ecp').style.display='block';ok=false;}
+  else{document.getElementById('cpn').classList.remove('err');document.getElementById('ecp').style.display='none';}
+  if(!ok)return;
+  showView('context');rContext();
+}
+
+function rContext(){
+  let ptO='<option value="">Select project type...</option>';
+  Object.entries(PROJ_TYPES).forEach(([g,opts])=>{ptO+=`<optgroup label="${g}">`;opts.forEach(o=>ptO+=`<option${S.projType===o?' selected':''}>${o}</option>`);ptO+=`</optgroup>`;});
+  let atO='<option value="">Select application...</option>';
+  APP_TYPES.forEach(a=>atO+=`<option${S.appType===a?' selected':''}>${a}</option>`);
+  document.getElementById('v-context').innerHTML=`<div class="card ac">
+    <div class="sh"><div class="sn">2</div><div><div class="st">Project context</div><div class="ss">Application and project type</div></div></div>
+    <div class="two-col">
+      <div><div class="lbl">Application type <span style="color:#A32D2D">*</span></div><select id="asel" onchange="S.appType=this.value">${atO}</select><div class="err-msg" id="eapp">Required</div></div>
+      <div><div class="lbl">Project type <span style="color:#A32D2D">*</span></div><select id="psel" onchange="S.projType=this.value">${ptO}</select><div class="err-msg" id="eproj">Required</div></div>
+    </div>
+    <div class="nav-row"><button class="btn" onclick="showView('product');rProduct()">&#8249; Back</button>
+    <div class="dots"><div class="dot"></div><div class="dot on"></div><div class="dot"></div><div class="dot"></div></div>
+    <button class="btn pri" onclick="nextC()">Next: Cost inputs ›</button></div></div>`;
+}
+
+function nextC(){
+  S.appType=document.getElementById('asel').value;S.projType=document.getElementById('psel').value;
+  let ok=true;
+  if(!S.appType){document.getElementById('asel').classList.add('err');document.getElementById('eapp').style.display='block';ok=false;}
+  else{document.getElementById('asel').classList.remove('err');document.getElementById('eapp').style.display='none';}
+  if(!S.projType){document.getElementById('psel').classList.add('err');document.getElementById('eproj').style.display='block';ok=false;}
+  else{document.getElementById('psel').classList.remove('err');document.getElementById('eproj').style.display='none';}
+  if(!ok)return;
+  showView('costs');rCosts();
+}
+
+function geoHtml(){
+  let rows='';
+  GEO.forEach((g,i)=>{rows+=`<div class="ref-item${S.geo===i?' on':''}" onclick="S.geo=${i};rCosts()"><div class="ref-name">${g.name}</div><div class="ref-range">$${g.low}–$${g.high}/LF</div></div>`;});
+  const sel=S.geo!==null?GEO[S.geo]:null;
+  return `<div class="ref-panel"><div class="ref-title">Regional excavation benchmarks — click to reference</div><div class="ref-grid">${rows}</div>
+    ${sel?`<div class="ref-note"><strong>${sel.name}</strong> · $${sel.low}–$${sel.high}/LF · ${sel.note}<br><small>${sel.states}</small></div>`:'<div class="ref-note">Select a region to see typical cost range and soil conditions</div>'}</div>`;
+}
+
+function installRefHtml(){
+  const bm=INSTALL_BENCHMARKS[S.product]||[];
+  if(!bm.length)return'';
+  let chips='';
+  bm.forEach((b,i)=>{chips+=`<div class="chip${S.installChip===i?' sel':''}" onclick="S.installChip=${i};rCosts()"><span class="chip-lbl">${b.label}</span><span class="chip-range">${b.range}/LF</span></div>`;});
+  const sel=S.installChip!==null?bm[S.installChip]:null;
+  return `<div class="install-ref-panel"><div class="install-ref-title">Typical installation cost benchmarks for ${S.product} — click to reference</div>
+    <div class="install-chips">${chips}</div>
+    <div class="install-detail${sel?' show':''}">${sel?`<strong>${sel.label} — ${sel.range}/LF</strong><br>${sel.detail}`:''}</div></div>`;
+}
+
+function updateDerived(side){
+  const rate=side==='ct'?S.instRateCt:S.instRateCp;
+  const el=document.getElementById('drv-'+side);
+  if(!el)return;
+  if(rate>0&&S.projLen>0){const days=Math.ceil(S.projLen/rate);el.innerHTML=`<span class="rate-val">${days}</span><span class="rate-unit">est. days (${S.projLen.toLocaleString()} LF ÷ ${rate} LF/day)</span>`;}
+  else if(rate>0){el.innerHTML=`<span class="rate-val">${rate}</span><span class="rate-unit">LF/day production rate</span>`;}
+  else{el.innerHTML=`<span class="rate-unit">Enter rate to estimate install duration</span>`;}
+}
+
+function rCosts(){
+  const ct=S.product;const cpFull=`${S.compName||'Competitor'} — ${S.compProduct||'product'}`;
+  const matCard=`<div class="card ac" style="margin-bottom:.75rem"><div class="sh"><div class="sn">3</div><div><div class="st">Delivered material cost</div><div class="ss">Mill / supplier price delivered to jobsite</div></div></div>
+    <div class="two-col">
+      <div><div class="col-hdr"><span class="col-badge badge-ct">Contech</span><span class="col-title">${ct}</span></div><div class="lbl">$/linear foot</div><input type="number" id="mat-ct" placeholder="0.00" min="0" step="0.01" value="${S.mat.ct||''}" oninput="S.mat.ct=+this.value||0"></div>
+      <div><div class="col-hdr"><span class="col-badge badge-cp">Competitor</span><span class="col-title">${cpFull}</span></div><div class="lbl">$/linear foot</div><input type="number" id="mat-cp" placeholder="0.00" min="0" step="0.01" value="${S.mat.cp||''}" oninput="S.mat.cp=+this.value||0"></div>
+    </div></div>`;
+  const excCard=`<div class="card ac" style="margin-bottom:.75rem"><div class="sh"><div class="sn">4</div><div><div class="st">Excavation & trenching</div><div class="ss">Per LF based on pipe OD, depth, and soil conditions</div></div></div>
+    <div class="two-col">
+      <div><div class="col-hdr"><span class="col-badge badge-ct">Contech</span><span class="col-title">${ct}</span></div><div class="lbl">$/linear foot</div><input type="number" id="exc-ct" placeholder="0.00" min="0" step="0.01" value="${S.exc.ct||''}" oninput="S.exc.ct=+this.value||0"></div>
+      <div><div class="col-hdr"><span class="col-badge badge-cp">Competitor</span><span class="col-title">${cpFull}</span></div><div class="lbl">$/linear foot</div><input type="number" id="exc-cp" placeholder="0.00" min="0" step="0.01" value="${S.exc.cp||''}" oninput="S.exc.cp=+this.value||0"></div>
+    </div>${geoHtml()}</div>`;
+  const instCard=`<div class="card ac" style="margin-bottom:.75rem"><div class="sh"><div class="sn">5</div><div><div class="st">Installation labor</div><div class="ss">Per LF labor cost and crew production rate</div></div></div>
+    <div class="two-col">
+      <div><div class="col-hdr"><span class="col-badge badge-ct">Contech</span><span class="col-title">${ct}</span></div><div class="lbl">$/linear foot</div><input type="number" id="inst-ct" placeholder="0.00" min="0" step="0.01" value="${S.inst.ct||''}" oninput="S.inst.ct=+this.value||0"></div>
+      <div><div class="col-hdr"><span class="col-badge badge-cp">Competitor</span><span class="col-title">${cpFull}</span></div><div class="lbl">$/linear foot</div><input type="number" id="inst-cp" placeholder="0.00" min="0" step="0.01" value="${S.inst.cp||''}" oninput="S.inst.cp=+this.value||0"></div>
+    </div>${installRefHtml()}
+    <div class="rate-row">
+      <div><div class="lbl">Contech ${ct} install rate (LF/day)</div><input type="number" id="ir-ct" placeholder="e.g. 300" min="1" step="1" value="${S.instRateCt||''}" oninput="S.instRateCt=+this.value||0;updateDerived('ct')"><div class="rate-derived" id="drv-ct"><span class="rate-unit">Enter rate to estimate install duration</span></div></div>
+      <div><div class="lbl">${S.compName} install rate (LF/day)</div><input type="number" id="ir-cp" placeholder="e.g. 200" min="1" step="1" value="${S.instRateCp||''}" oninput="S.instRateCp=+this.value||0;updateDerived('cp')"><div class="rate-derived" id="drv-cp"><span class="rate-unit">Enter rate to estimate install duration</span></div></div>
+    </div><div class="info">Faster installation reduces mobilization, overhead, and road-closure costs.</div></div>`;
+  let eqH=`<div class="card ac" style="margin-bottom:.75rem"><div class="sh"><div class="sn">6</div><div><div class="st">Equipment for installation</div><div class="ss">Added equally to both products</div></div></div><div class="eq-grid">`;
+  EQUIPMENT.forEach(e=>{const on=S.equip.has(e.id);eqH+=`<div class="eq${on?' on':''}" id="eq-${e.id}" onclick="toggleEq('${e.id}')"><div class="eq-chk"><div class="eq-inner"></div></div><div><div class="eq-lbl">${e.label}</div><div class="eq-cost">+$${e.cost.toFixed(2)}/LF</div></div></div>`;});
+  eqH+=`</div><div class="info">Equipment costs apply equally to both columns.</div></div>`;
+  const nextLabel=isStormSewer()?'Next: Junction boxes ›':'View cost comparison summary ›';
+  const nextFn=isStormSewer()?'nextToJBox()':'calculate()';
+  const dotHtml=isStormSewer()?
+    `<div class="dot"></div><div class="dot"></div><div class="dot on"></div><div class="dot"></div><div class="dot"></div>`:
+    `<div class="dot"></div><div class="dot"></div><div class="dot on"></div><div class="dot"></div>`;
+  const lenCard=`<div class="card ac"><div class="sh"><div class="sn">7</div><div><div class="st">Project length</div><div class="ss">Used for total cost and schedule calculations</div></div></div>
+    <div style="display:flex;align-items:center;gap:10px"><input type="number" id="pl" placeholder="Linear feet" min="1" step="1" value="${S.projLen||''}" oninput="S.projLen=+this.value||0;updateDerived('ct');updateDerived('cp')" style="max-width:180px"><span style="font-size:12px;color:var(--color-text-secondary)">linear feet</span></div>
+    <div class="nav-row"><button class="btn" onclick="showView('context');rContext()">&#8249; Back</button><div class="dots">${dotHtml}</div><button class="btn pri full" onclick="${nextFn}">${nextLabel}</button></div></div>`;
+  document.getElementById('v-costs').innerHTML=matCard+excCard+instCard+eqH+lenCard;
+  setTimeout(()=>{updateDerived('ct');updateDerived('cp');},50);
+}
+
+function toggleEq(id){S.equip.has(id)?S.equip.delete(id):S.equip.add(id);const el=document.getElementById('eq-'+id);if(el)el.classList.toggle('on',S.equip.has(id));}
+function nextToJBox(){S.projLen=+(document.getElementById('pl').value||0);showView('jbox');rJBox();}
+
+function updateJbSavings(){
+  const ctT=jbTotal('ct'),pcT=jbTotal('pc'),diff=pcT-ctT;
+  const ctTotEl=document.getElementById('jb-ct-total'),pcTotEl=document.getElementById('jb-pc-total'),savEl=document.getElementById('jb-savings');
+  if(ctTotEl)ctTotEl.textContent=`$${ctT.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+  if(pcTotEl)pcTotEl.textContent=`$${pcT.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+  if(savEl){
+    if(diff>0){savEl.className='jb-savings show';savEl.innerHTML=`<span>Contech junction boxes save <strong>$${diff.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</strong> vs. precast on this project</span><span class="jb-savings-badge">-${((diff/pcT)*100).toFixed(1)}%</span>`;}
+    else if(diff<0){savEl.className='jb-savings show';savEl.style.background='var(--color-background-secondary)';savEl.style.borderColor='var(--color-border-tertiary)';savEl.innerHTML=`<span>Precast is $${Math.abs(diff).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})} less than Contech junction boxes</span>`;}
+    else{savEl.className='jb-savings';}
+  }
+}
+
+function rJBox(){
+  document.getElementById('v-jbox').innerHTML=`<div class="jb-card">
+    <div class="sh"><div class="sn" style="background:#1D9E75">JB</div><div><div class="st">Junction box comparison</div><div class="ss">Storm sewer — Contech precast vs. standard precast junction box</div></div></div>
+    <div class="jb-header-strip"><div class="jb-icon"><div class="jb-icon-inner"></div></div><div><div class="jb-header-txt">Storm sewer application detected</div><div class="jb-header-sub">Compare junction box costs independent of pipe competitor</div></div></div>
+    <div class="jb-two">
+      <div class="jb-col ct-side"><div class="jb-col-name">Contech junction box</div>
+        <div class="jb-field"><div class="lbl">Unit cost ($)</div><input type="number" id="jb-ct-unit" placeholder="0.00" min="0" step="0.01" value="${S.jb.ctUnit||''}" oninput="S.jb.ctUnit=+this.value||0;updateJbSavings()"></div>
+        <div class="jb-field"><div class="lbl">Quantity on project</div><input type="number" id="jb-ct-qty" placeholder="0" min="0" step="1" value="${S.jb.ctQty||''}" oninput="S.jb.ctQty=+this.value||0;updateJbSavings()"></div>
+        <div class="jb-total ct-tot"><span>Total</span><span id="jb-ct-total">$0.00</span></div></div>
+      <div class="jb-col"><div class="jb-col-name">Precast junction box</div>
+        <div class="jb-field"><div class="lbl">Unit cost ($)</div><input type="number" id="jb-pc-unit" placeholder="0.00" min="0" step="0.01" value="${S.jb.pcUnit||''}" oninput="S.jb.pcUnit=+this.value||0;updateJbSavings()"></div>
+        <div class="jb-field"><div class="lbl">Quantity on project</div><input type="number" id="jb-pc-qty" placeholder="0" min="0" step="1" value="${S.jb.pcQty||''}" oninput="S.jb.pcQty=+this.value||0;updateJbSavings()"></div>
+        <div class="jb-total"><span>Total</span><span id="jb-pc-total">$0.00</span></div></div>
+    </div>
+    <div class="jb-savings" id="jb-savings"></div>
+    <div class="info">Junction box costs are tracked separately and shown as a standalone line item in the summary.</div>
+    <div class="nav-row"><button class="btn" onclick="showView('costs');rCosts()">&#8249; Back</button>
+    <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot on"></div><div class="dot"></div></div>
+    <button class="btn pri" onclick="calculate()">View cost comparison summary ›</button></div></div>`;
+  setTimeout(updateJbSavings,50);
+}
+
+function printSummary(){
+  const d=new Date();
+  const dateStr=d.toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+  const w=window.open('','_blank','width=900,height=700');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Contech TIC — ${S.product} vs ${S.compName}</title>
+  <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;color:#1a1a1a;background:#fff;padding:32px;font-size:13px;line-height:1.5}.print-hdr{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:16px;border-bottom:2px solid #1a4a7a;margin-bottom:20px}.print-logo{display:flex;align-items:center;gap:10px}.plm{width:36px;height:36px;background:#1a4a7a;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;letter-spacing:.5px;flex-shrink:0}.pt{font-size:18px;font-weight:700;color:#1a4a7a}.ps{font-size:12px;color:#666;margin-top:2px}.pm{text-align:right;font-size:11px;color:#666}.section{margin-bottom:18px}.st{font-size:11px;font-weight:700;color:#1a4a7a;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e0eaf5}.banner{padding:10px 14px;border-radius:6px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}.banner.win{background:#E6F1FB;border:1px solid #B5D4F4}.banner.lose{background:#f8f8f6;border:1px solid #ddd}.bt{font-size:13px;font-weight:700;color:#0C447C}.banner.lose .bt{color:#333}.bs{font-size:11px;color:#185FA5;margin-top:2px}.badge{background:#0C447C;color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:4px}.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}.s{background:#f4f7fb;border-radius:6px;padding:10px;border:1px solid #e0eaf5}.s.hi{background:#E6F1FB;border-color:#B5D4F4}.sl{font-size:10px;color:#666;margin-bottom:3px;font-weight:600;text-transform:uppercase;letter-spacing:.4px}.sv{font-size:20px;font-weight:700;color:#1a1a1a}.s.hi .sv{color:#0C447C}.su{font-size:10px;color:#888;margin-top:2px}.sn{background:#f0f6ff;border:1px solid #c0d8f0;border-radius:5px;padding:8px 12px;font-size:11px;color:#1a4a7a;margin-bottom:14px}.tc{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}.sc{border-radius:6px;padding:12px;border:1px solid #ddd}.sc.ct{background:#E6F1FB;border-color:#B5D4F4}.sc.cp{background:#f8f8f6}.cn{font-size:12px;font-weight:700;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(0,0,0,.08);color:#1a1a1a}.sc.ct .cn{color:#0C447C}.r{display:flex;justify-content:space-between;padding:2px 0;font-size:12px}.rl{color:#555}.rv{font-weight:600}.tr{display:flex;justify-content:space-between;padding:7px 0 0;margin-top:5px;border-top:1px solid rgba(0,0,0,.1);font-size:14px;font-weight:700}.wc{color:#0C447C}.lc{color:#a32d2d}.bs2{margin-bottom:14px}.br{margin-bottom:8px}.bl{display:flex;justify-content:space-between;font-size:11px;color:#555;margin-bottom:3px}.bl span:last-child{font-weight:600;color:#1a1a1a}.bt2{height:10px;background:#eee;border-radius:4px;overflow:hidden}.bf{height:100%;border-radius:4px}.bct{background:#1a4a7a}.bcp{background:#aaa}.pr{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}.pi{background:#f4f7fb;border-radius:6px;padding:10px;border:1px solid #e0eaf5}.pl{font-size:11px;color:#666;margin-bottom:2px}.pv{font-size:16px;font-weight:700}.ps2{grid-column:1/-1}.jb{background:#E1F5EE;border:1px solid #9FE1CB;border-radius:6px;padding:10px 14px;margin-bottom:14px}.jbt{font-size:11px;font-weight:700;color:#085041;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}.jbr{display:flex;justify-content:space-between;font-size:12px;padding:2px 0;color:#0F6E56}.jbr span:last-child{font-weight:700;color:#085041}.dt{width:100%;border-collapse:collapse}.dt td{padding:4px 0;font-size:12px;border-bottom:1px solid #f0f0f0}.dt td:first-child{color:#666;width:40%}.dt td:last-child{font-weight:600}.footer{margin-top:24px;padding-top:12px;border-top:1px solid #e0eaf5;display:flex;justify-content:space-between;font-size:10px;color:#888}@media print{button{display:none!important}}</style></head><body>
+  ${_lastSummaryHTML}
+  <div class="footer"><span>Contech Engineered Solutions · Total Installed Cost Analysis</span><span>Generated ${dateStr}</span></div>
+  <div style="text-align:center;margin-top:20px"><button onclick="window.print()" style="padding:10px 28px;background:#1a4a7a;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer">Print / Save as PDF</button></div>
+  </body></html>`);
+  w.document.close();
+}
+
+function calculate(){
+  if(!isStormSewer())S.jb={ctUnit:0,ctQty:0,pcUnit:0,pcQty:0};
+  const eq=Array.from(S.equip).reduce((s,id)=>{const e=EQUIPMENT.find(x=>x.id===id);return s+(e?e.cost:0);},0);
+  const ct=S.mat.ct+S.exc.ct+S.inst.ct+eq;
+  const cp=S.mat.cp+S.exc.cp+S.inst.cp+eq;
+  const ctW=ct<=cp;const diff=Math.abs(ct-cp);const pct=cp>0?((diff/cp)*100).toFixed(1):0;const maxV=Math.max(ct,cp)||1;
+  const ctDays=S.instRateCt>0&&S.projLen>0?Math.ceil(S.projLen/S.instRateCt):null;
+  const cpDays=S.instRateCp>0&&S.projLen>0?Math.ceil(S.projLen/S.instRateCp):null;
+  const dayDiff=ctDays!==null&&cpDays!==null?cpDays-ctDays:null;
+  const ctJbT=jbTotal('ct');const pcJbT=jbTotal('pc');const jbDiff=pcJbT-ctJbT;
+  const cpLabel=`${S.compName} — ${S.compProduct}`;
+  const eqNames=Array.from(S.equip).map(id=>EQUIPMENT.find(x=>x.id===id)?.label).filter(Boolean).join(', ')||'None';
+  const geoName=S.geo!==null?GEO[S.geo].name:'Not specified';
+  const chipSel=S.installChip!==null&&INSTALL_BENCHMARKS[S.product]?INSTALL_BENCHMARKS[S.product][S.installChip]?.label:'Not selected';
+  const d=new Date();const dateStr=d.toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+
+  let projTHTML='';
+  if(S.projLen>0){
+    const ctP=(ct*S.projLen).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+    const cpP=(cp*S.projLen).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+    const diffP=(diff*S.projLen).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+    projTHTML=`<div class="pr"><div class="pi"><div class="pl">Contech ${S.product} total (${S.projLen.toLocaleString()} LF)</div><div class="pv ${ctW?'wc':''}">\$${ctP}</div></div><div class="pi"><div class="pl">${cpLabel} total</div><div class="pv ${!ctW?'wc':''}">\$${cpP}</div></div>${diff>0?`<div class="pi ps2"><div class="pl">${ctW?'Total pipe savings with Contech':'Additional pipe cost vs. competitor'}</div><div class="pv ${ctW?'wc':'lc'}">\$${diffP}</div></div>`:''}</div>`;
+  }
+
+  let jbBlockHTML='';
+  if(isStormSewer()&&(ctJbT>0||pcJbT>0)){
+    const jbWinCt=ctJbT<=pcJbT;
+    jbBlockHTML=`<div class="jb"><div class="jbt">Junction box comparison — storm sewer</div><div class="jbr"><span>Contech junction box (${S.jb.ctQty} units × \$${S.jb.ctUnit.toFixed(2)})</span><span class="${jbWinCt?'':'lc'}">\$${ctJbT.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</span></div><div class="jbr"><span>Precast junction box (${S.jb.pcQty} units × \$${S.jb.pcUnit.toFixed(2)})</span><span>\$${pcJbT.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</span></div>${Math.abs(jbDiff)>0?`<div class="jbr" style="margin-top:5px;padding-top:5px;border-top:1px solid rgba(15,110,86,.2)"><span>${jbDiff>0?'Junction box savings with Contech':'Additional junction box cost'}</span><span class="${jbDiff>0?'wc':'lc'}">\$${Math.abs(jbDiff).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</span></div>`:''}</div>`;
+  }
+
+  _lastSummaryHTML=`<div class="print-hdr"><div class="print-logo"><div class="plm">CTI</div><div><div class="pt">Total installed cost comparison</div><div class="ps">${S.appType} · ${S.projType}</div></div></div><div class="pm"><strong>Contech ${S.product}</strong> vs. ${S.compName} ${S.compProduct}<br>Generated ${dateStr}</div></div>
+  <div class="section"><div class="st">Cost summary</div>
+  <div class="banner${ctW?' win':' lose'}"><div><div class="bt">${ctW&&diff>0?`Contech ${S.product} is the lower-cost solution`:diff>0?`${cpLabel} is priced lower`:'Products are equal in total installed cost'}</div>${diff>0?`<div class="bs">${ctW?`\$${diff.toFixed(2)}/LF less than ${cpLabel}`:`Contech ${S.product} is \$${diff.toFixed(2)}/LF higher`}</div>`:''}</div>${diff>0&&ctW?`<div class="badge">-${pct}% vs. competitor</div>`:''}</div>
+  <div class="sg"><div class="s${ctW?' hi':''}"><div class="sl">Contech ${S.product}</div><div class="sv">\$${ct.toFixed(2)}</div><div class="su">per linear foot</div></div><div class="s${!ctW?' hi':''}"><div class="sl">${S.compName} ${S.compProduct}</div><div class="sv">\$${cp.toFixed(2)}</div><div class="su">per linear foot</div></div><div class="s${ctDays&&ctW?' hi':''}"><div class="sl">Contech install time</div><div class="sv">${ctDays||'—'}</div><div class="su">${ctDays?'working days':'n/a'}</div></div><div class="s${cpDays&&!ctW?' hi':''}"><div class="sl">Competitor install time</div><div class="sv">${cpDays||'—'}</div><div class="su">${cpDays?'working days':'n/a'}</div></div></div>
+  ${dayDiff&&dayDiff!==0?`<div class="sn">${dayDiff>0?`Contech ${S.product} installs <strong>${dayDiff} fewer working days</strong> than ${S.compName} ${S.compProduct}.`:`${S.compName} ${S.compProduct} installs ${Math.abs(dayDiff)} fewer working days.`}</div>`:''}
+  ${jbBlockHTML}
+  <div class="tc"><div class="sc ct"><div class="cn">Contech — ${S.product}</div><div class="r"><span class="rl">Material (delivered)</span><span class="rv">\$${S.mat.ct.toFixed(2)}/LF</span></div><div class="r"><span class="rl">Excavation & trenching</span><span class="rv">\$${S.exc.ct.toFixed(2)}/LF</span></div><div class="r"><span class="rl">Installation labor</span><span class="rv">\$${S.inst.ct.toFixed(2)}/LF</span></div><div class="r"><span class="rl">Equipment</span><span class="rv">\$${eq.toFixed(2)}/LF</span></div>${S.instRateCt>0?`<div class="r"><span class="rl">Install rate</span><span class="rv">${S.instRateCt} LF/day</span></div>`:''}${ctDays?`<div class="r"><span class="rl">Est. install time</span><span class="rv ${ctW?'wc':''}">${ctDays} days</span></div>`:''}<div class="tr"><span>Total $/LF</span><span class="${ctW?'wc':''}">\$${ct.toFixed(2)}</span></div></div>
+  <div class="sc cp"><div class="cn">${cpLabel}</div><div class="r"><span class="rl">Material (delivered)</span><span class="rv">\$${S.mat.cp.toFixed(2)}/LF</span></div><div class="r"><span class="rl">Excavation & trenching</span><span class="rv">\$${S.exc.cp.toFixed(2)}/LF</span></div><div class="r"><span class="rl">Installation labor</span><span class="rv">\$${S.inst.cp.toFixed(2)}/LF</span></div><div class="r"><span class="rl">Equipment</span><span class="rv">\$${eq.toFixed(2)}/LF</span></div>${S.instRateCp>0?`<div class="r"><span class="rl">Install rate</span><span class="rv">${S.instRateCp} LF/day</span></div>`:''}${cpDays?`<div class="r"><span class="rl">Est. install time</span><span class="rv ${!ctW?'wc':''}">${cpDays} days</span></div>`:''}<div class="tr"><span>Total $/LF</span><span class="${!ctW?'wc':''}">\$${cp.toFixed(2)}</span></div></div></div>
+  <div class="bs2"><div class="br"><div class="bl"><span>Contech ${S.product}</span><span>\$${ct.toFixed(2)}/LF</span></div><div class="bt2"><div class="bf bct" style="width:${Math.round((ct/maxV)*100)}%"></div></div></div><div class="br"><div class="bl"><span>${S.compName} ${S.compProduct}</span><span>\$${cp.toFixed(2)}/LF</span></div><div class="bt2"><div class="bf bcp" style="width:${Math.round((cp/maxV)*100)}%"></div></div></div></div>
+  ${projTHTML}</div>
+  <div class="section"><div class="st">Project details</div><table class="dt"><tr><td>Application</td><td>${S.appType}</td></tr><tr><td>Project type</td><td>${S.projType}</td></tr><tr><td>Geography reference</td><td>${geoName}</td></tr><tr><td>Install benchmark used</td><td style="font-weight:400;color:#666">${chipSel}</td></tr><tr><td>Equipment selected</td><td style="font-weight:400;color:#666">${eqNames}</td></tr>${S.projLen>0?`<tr><td>Project length</td><td>${S.projLen.toLocaleString()} LF</td></tr>`:''}${S.instRateCt>0?`<tr><td>Contech install rate</td><td>${S.instRateCt} LF/day</td></tr>`:''}${S.instRateCp>0?`<tr><td>Competitor install rate</td><td>${S.instRateCp} LF/day</td></tr>`:''}</table></div>`;
+
+  let banner='';
+  if(diff>0&&ctW)banner=`<div class="winner-banner wbn-ct"><div><div class="winner-txt">Contech ${S.product} is the lower-cost solution</div><div class="winner-sub">\$${diff.toFixed(2)}/LF less than ${cpLabel}</div></div><div class="savings-badge">-${pct}% vs. competitor</div></div>`;
+  else if(diff>0)banner=`<div class="winner-banner wbn-cp"><div><div class="winner-txt">${cpLabel} is priced lower</div><div class="winner-sub">Contech ${S.product} is \$${diff.toFixed(2)}/LF higher — review value story</div></div></div>`;
+  else banner=`<div class="winner-banner wbn-eq"><div class="winner-txt">Products are equal in total installed cost</div></div>`;
+
+  const statGrid=`<div class="stat-grid">
+    <div class="stat${ctW?' hi':''}"><div class="stat-lbl">Contech ${S.product}</div><div class="stat-val">\$${ct.toFixed(2)}</div><div class="stat-unit">per linear foot</div></div>
+    <div class="stat${!ctW?' hi':''}"><div class="stat-lbl">${S.compName} ${S.compProduct}</div><div class="stat-val">\$${cp.toFixed(2)}</div><div class="stat-unit">per linear foot</div></div>
+    <div class="stat${ctDays&&ctW?' hi':''}"><div class="stat-lbl">Contech install time</div><div class="stat-val">${ctDays||'—'}</div><div class="stat-unit">${ctDays?'working days':'enter rate & LF'}</div></div>
+    <div class="stat${cpDays&&!ctW?' hi':''}"><div class="stat-lbl">Competitor install time</div><div class="stat-val">${cpDays||'—'}</div><div class="stat-unit">${cpDays?'working days':'enter rate & LF'}</div></div>
+  </div>`;
+  const schedNote=dayDiff&&dayDiff!==0?`<div class="info" style="margin-bottom:1rem">${dayDiff>0?`Contech ${S.product} installs <strong style="font-weight:600">${dayDiff} fewer working days</strong> than ${S.compName} ${S.compProduct} — reducing mobilization, overhead, and traffic impact.`:`${S.compName} ${S.compProduct} installs ${Math.abs(dayDiff)} fewer working days on this project.`}</div>`:'';
+
+  let jbBlock2='';
+  if(isStormSewer()&&(ctJbT>0||pcJbT>0)){
+    const jbWinCt=ctJbT<=pcJbT;
+    jbBlock2=`<div class="jb-sum-block"><div class="jb-sum-title">Junction box comparison — storm sewer</div>
+      <div class="jb-sum-row"><span>Contech junction box (${S.jb.ctQty} units × \$${S.jb.ctUnit.toFixed(2)})</span><span class="${jbWinCt?'':'lose-val'}">\$${ctJbT.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</span></div>
+      <div class="jb-sum-row"><span>Precast junction box (${S.jb.pcQty} units × \$${S.jb.pcUnit.toFixed(2)})</span><span>\$${pcJbT.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</span></div>
+      ${Math.abs(jbDiff)>0?`<div class="jb-sum-row" style="margin-top:4px;padding-top:6px;border-top:0.5px solid rgba(15,110,86,.2)"><span>${jbDiff>0?'Junction box savings with Contech':'Additional junction box cost vs. precast'}</span><span class="${jbDiff>0?'win-val':'lose-val'}">\$${Math.abs(jbDiff).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</span></div>`:''}</div>`;
+  }
+
+  const sumGrid=`<div class="summary-grid">
+    <div class="sum-col ct-col"><div class="sum-col-name" style="color:#0C447C">Contech — ${S.product}</div>
+      <div class="sum-row"><span class="sum-lbl">Material (delivered)</span><span class="sum-val">\$${S.mat.ct.toFixed(2)}/LF</span></div>
+      <div class="sum-row"><span class="sum-lbl">Excavation & trenching</span><span class="sum-val">\$${S.exc.ct.toFixed(2)}/LF</span></div>
+      <div class="sum-row"><span class="sum-lbl">Installation labor</span><span class="sum-val">\$${S.inst.ct.toFixed(2)}/LF</span></div>
+      <div class="sum-row"><span class="sum-lbl">Equipment</span><span class="sum-val">\$${eq.toFixed(2)}/LF</span></div>
+      ${S.instRateCt>0?`<div class="sum-row"><span class="sum-lbl">Install rate</span><span class="sum-val">${S.instRateCt} LF/day</span></div>`:''}
+      ${ctDays?`<div class="sum-row"><span class="sum-lbl">Est. install time</span><span class="sum-val${ctW?' win-val':''}">${ctDays} days</span></div>`:''}
+      <div class="sum-total"><span>Total $/LF</span><span class="${ctW?'win-val':''}">\$${ct.toFixed(2)}</span></div></div>
+    <div class="sum-col cp-col"><div class="sum-col-name">${cpLabel}</div>
+      <div class="sum-row"><span class="sum-lbl">Material (delivered)</span><span class="sum-val">\$${S.mat.cp.toFixed(2)}/LF</span></div>
+      <div class="sum-row"><span class="sum-lbl">Excavation & trenching</span><span class="sum-val">\$${S.exc.cp.toFixed(2)}/LF</span></div>
+      <div class="sum-row"><span class="sum-lbl">Installation labor</span><span class="sum-val">\$${S.inst.cp.toFixed(2)}/LF</span></div>
+      <div class="sum-row"><span class="sum-lbl">Equipment</span><span class="sum-val">\$${eq.toFixed(2)}/LF</span></div>
+      ${S.instRateCp>0?`<div class="sum-row"><span class="sum-lbl">Install rate</span><span class="sum-val">${S.instRateCp} LF/day</span></div>`:''}
+      ${cpDays?`<div class="sum-row"><span class="sum-lbl">Est. install time</span><span class="sum-val${!ctW?' win-val':''}">${cpDays} days</span></div>`:''}
+      <div class="sum-total"><span>Total $/LF</span><span class="${!ctW?'win-val':''}">\$${cp.toFixed(2)}</span></div></div>
+  </div>`;
+
+  const bars=`<div class="bars">
+    <div class="bar-row"><div class="bar-lbl"><span>Contech ${S.product}</span><span>\$${ct.toFixed(2)}/LF</span></div><div class="bar-track"><div class="bar-fill bar-ct" style="width:${Math.round((ct/maxV)*100)}%"></div></div></div>
+    <div class="bar-row"><div class="bar-lbl"><span>${S.compName} ${S.compProduct}</span><span>\$${cp.toFixed(2)}/LF</span></div><div class="bar-track"><div class="bar-fill bar-cp" style="width:${Math.round((cp/maxV)*100)}%"></div></div></div>
+  </div>`;
+
+  let projT2='';
+  if(S.projLen>0){
+    const ctP=(ct*S.projLen).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+    const cpP=(cp*S.projLen).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+    const diffP=(diff*S.projLen).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+    projT2=`<div class="proj-totals"><div><div class="proj-tot-lbl">Contech ${S.product} total (${S.projLen.toLocaleString()} LF)</div><div class="proj-tot-val${ctW?' win-val':''}">\$${ctP}</div></div><div><div class="proj-tot-lbl">${cpLabel} total</div><div class="proj-tot-val${!ctW?' win-val':''}">\$${cpP}</div></div>${diff>0?`<div style="grid-column:1/-1"><div class="proj-tot-lbl">${ctW?'Total pipe savings with Contech':'Additional pipe cost vs. competitor'}</div><div class="proj-tot-val${ctW?' win-val':' lose-val'}">\$${diffP}</div></div>`:''}</div>`;
+  }
+
+  const details=`<div class="divider"></div><div class="lbl" style="margin-bottom:8px">Project details</div>
+    <table class="detail-tbl">
+      <tr><td>Application</td><td>${S.appType}</td></tr><tr><td>Project type</td><td>${S.projType}</td></tr>
+      <tr><td>Geography reference</td><td>${geoName}</td></tr><tr><td>Install benchmark used</td><td style="font-weight:400;color:var(--color-text-secondary)">${chipSel}</td></tr>
+      <tr><td>Equipment selected</td><td style="font-weight:400;color:var(--color-text-secondary)">${eqNames}</td></tr>
+      ${S.projLen>0?`<tr><td>Project length</td><td>${S.projLen.toLocaleString()} LF</td></tr>`:''}
+      ${S.instRateCt>0?`<tr><td>Contech install rate</td><td>${S.instRateCt} LF/day</td></tr>`:''}
+      ${S.instRateCp>0?`<tr><td>Competitor install rate</td><td>${S.instRateCp} LF/day</td></tr>`:''}
+    </table>`;
+
+  document.getElementById('v-results').innerHTML=`<div class="card">
+    <div class="sh"><div class="sn"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+    <div><div class="st">Cost comparison summary</div><div class="ss">${S.appType} · ${S.projType}</div></div></div>
+    ${banner}${statGrid}${schedNote}${jbBlock2}${sumGrid}${bars}${projT2}${details}
+    <div class="action-row">
+      <button class="btn-pdf" onclick="printSummary()"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="1" width="10" height="12" rx="1.5" stroke="#fff" stroke-width="1.2"/><path d="M4 5h6M4 7.5h6M4 10h4" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/></svg>Print / Save as PDF</button>
+      <button class="btn" onclick="showView(isStormSewer()?'jbox':'costs');isStormSewer()?rJBox():rCosts()">&#8249; Edit inputs</button>
+      <button class="btn" onclick="reset()">Start new comparison</button>
+    </div></div>`;
+
+  showView('results');
+  setTimeout(()=>document.getElementById('v-results').scrollIntoView({behavior:'smooth',block:'start'}),100);
+}
+
+function reset(){
+  S={product:null,compName:'',compProduct:'',appType:'',projType:'',geo:null,installChip:null,equip:new Set(),
+    mat:{ct:0,cp:0},exc:{ct:0,cp:0},inst:{ct:0,cp:0},instRateCt:0,instRateCp:0,projLen:0,
+    jb:{ctUnit:0,ctQty:0,pcUnit:0,pcQty:0}};
+  _lastSummaryHTML='';showView('product');rProduct();
+}
+
+rProduct();
+</script>
+</body>
+</html>
