@@ -23,7 +23,10 @@ body{font-family:var(--font-sans);background:#f0f2f5;min-height:100vh;padding:24
 .hdr{display:flex;align-items:center;gap:10px;padding-bottom:1.25rem;border-bottom:0.5px solid var(--color-border-tertiary);margin-bottom:1.25rem}
 .hdr-mark{width:32px;height:32px;background:#1a4a7a;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .hdr-mark span{color:#fff;font-size:10px;font-weight:600;letter-spacing:.5px}
-.hdr-txt{font-size:16px;font-weight:600;color:var(--color-text-primary)}
+.inp-ct input,.inp-ct select,.inp-ct textarea{background-color:#EBF4FD !important;border-color:#7CB9E8 !important;}
+.inp-cp input,.inp-cp select,.inp-cp textarea{background-color:#FFFCE6 !important;border-color:#D4B94A !important;}
+.inp-ct .backfill-subtotal,.inp-ct .rate-derived{color:#185FA5}
+.inp-cp .backfill-subtotal,.inp-cp .rate-derived{color:#7a6a10}
 .hdr-sub{font-size:12px;color:var(--color-text-secondary);margin-top:1px}
 .card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1.25rem;margin-bottom:1rem}
 .card.ac{border-color:#1a4a7a}
@@ -331,7 +334,7 @@ const FITTINGS=[
 ];
 // Manning's n defaults by product type (full flow, standard AASHTO / FHWA values)
 const MANNING_N={
-  'CMP':0.024,       // Annular corrugated metal pipe
+  'CMP':0.012,       // CMP (smooth-lined default; adjust for corrugation type)
   'Ultra-Flo':0.012, // Polymer-coated steel, smooth interior
   'Slotted Drain':0.013,
   'DuroMaxx':0.012,  // Steel-reinforced HDPE, smooth HDPE liner
@@ -386,11 +389,14 @@ function carbonRank(ctVal,cpVal){
   return'tie';
 }
 
-function newDiamRows(){return[0,1,2,3,4].map(()=>({d:'',c:0,lf:0}));}
+function newDiamRows(){return Array.from({length:15},()=>({d:'',c:0,lf:0}));}
 
 let S={product:null,compName:'',compProduct:'',appType:'',projType:'',projName:'',geo:null,installChip:null,
   diam:{ct:newDiamRows(),cp:newDiamRows()},
   exc:{ct:0,cp:0},inst:{ct:0,cp:0},instRateCt:0,instRateCp:0,dailyRate:0,
+  visibleDiamLines:1,
+  visibleDiamLines:1,
+    rcbLines:Array.from({length:15},()=>({cmpBarrels:1,cmpSpacing:0,cmpBedding:12,cmpWorkRoom:18,cmpCover:0,ctManning:0,cpBarrels:1,cpSpacing:0,cpBedding:12,cpWorkRoom:18,cpCover:0,cpManning:0,runs:1,runSpacing:0,bedding:12,workRoom:18,rcbCover:0,span:0,rise:0,wall:6,topSlab:6,botSlab:6,haunch:12,collapsed:true})),
   backfill:{ctType:'',ctCost:0,ctRebar:false,ctRebarCost:REBAR_SUGGESTED_COST,cpType:'',cpCost:0,cpRebar:false,cpRebarCost:REBAR_SUGGESTED_COST},
   jb:{ctUnit:0,ctQty:0,pcUnit:0,pcQty:0},
   fit:{ct:newFit(),cp:newFit()},
@@ -402,7 +408,87 @@ function showView(v){['product','context','costs','jbox','results'].forEach(n=>d
 function isStormSewer(){return S.appType==='Storm sewer';}
 function isPrecastBox(){return (S.compProduct||'').toLowerCase().includes('precast box');}
 
+function parseDiamInch(s){const m=(s||'').toString().match(/[\d.]+/);return m?parseFloat(m[0]):0;}
 function manningDefaultCt(){return MANNING_N[S.product]||MANNING_N.default;}
+
+function cmpTrenchLine(i){
+  const ln=S.rcbLines[i],dFt=parseDiamInch(S.diam.ct[i]?.d)/12;
+  const barrels=Math.max(1,+(ln.cmpBarrels||1));
+  const trenchW=barrels*dFt+(barrels-1)*(+(ln.cmpSpacing||0)/12)+2*(+(ln.cmpWorkRoom||0)/12);
+  const trenchH=dFt+(+(ln.cmpBedding||0)/12) + +(ln.cmpCover||0);
+  const openPerBarrel=Math.PI*Math.pow(dFt/2,2);
+  const totalOpen=openPerBarrel*barrels;
+  const wettedPerim=Math.PI*dFt;
+  const hydraulicRadius=wettedPerim>0?openPerBarrel/wettedPerim:0;
+  const manN=+(ln.ctManning||0)||manningDefaultCt();
+  const conveyance=manN>0&&hydraulicRadius>0?(1.486/manN)*totalOpen*Math.pow(hydraulicRadius,2/3):0;
+  return{dFt,trenchW,trenchH,excav:trenchW*trenchH,openPerBarrel,totalOpen,wettedPerim,hydraulicRadius,manN,conveyance};
+}
+function compPipeTrenchLine(i){
+  const ln=S.rcbLines[i],dFt=parseDiamInch(S.diam.cp[i]?.d)/12;
+  const barrels=Math.max(1,+(ln.cpBarrels||1));
+  const trenchW=barrels*dFt+(barrels-1)*(+(ln.cpSpacing||0)/12)+2*(+(ln.cpWorkRoom||0)/12);
+  const trenchH=dFt+(+(ln.cpBedding||0)/12) + +(ln.cpCover||0);
+  const openPerBarrel=Math.PI*Math.pow(dFt/2,2);
+  const totalOpen=openPerBarrel*barrels;
+  const wettedPerim=Math.PI*dFt;
+  const hydraulicRadius=wettedPerim>0?openPerBarrel/wettedPerim:0;
+  const manN=+(ln.cpManning||0)||manningDefaultCp();
+  const conveyance=manN>0&&hydraulicRadius>0?(1.486/manN)*totalOpen*Math.pow(hydraulicRadius,2/3):0;
+  return{dFt,trenchW,trenchH,excav:trenchW*trenchH,openPerBarrel,totalOpen,wettedPerim,hydraulicRadius,manN,conveyance};
+}
+function rcbTrenchLine(i){
+  const ln=S.rcbLines[i];
+  // Per-line box dimensions (fall back to global S.rcb if line-level not set)
+  const span=+(ln.span)||+(S.rcb.span||0);
+  const rise=+(ln.rise)||+(S.rcb.rise||0);
+  const wall=+(ln.wall)||6;
+  const topSlab=+(ln.topSlab)||6;
+  const botSlab=+(ln.botSlab)||6;
+  const haunch=+(ln.haunch)||12;
+  const runs=Math.max(1,+(ln.runs||1));
+  const outerW=span+2*(wall/12);
+  const outerH=rise+(topSlab+botSlab)/12;
+  const trenchW=runs*outerW+Math.max(0,runs-1)*(+(ln.runSpacing||0)/12)+2*(+(ln.workRoom||0)/12);
+  const trenchH=outerH+(+(ln.bedding||0)/12)+(+(ln.rcbCover||0));
+  const haunchFt=haunch/12;
+  const haunchDeduct=4*(Math.sqrt(3)/4)*haunchFt*haunchFt;
+  const openPerBarrel=Math.max(0,span*rise-haunchDeduct);
+  const totalOpen=openPerBarrel*runs;
+  const wettedPerim=2*(span+rise);
+  const hydraulicRadius=wettedPerim>0?openPerBarrel/wettedPerim:0;
+  const manN=+(ln.cpManning||0)||manningDefaultCp();
+  const conveyance=manN>0&&hydraulicRadius>0?(1.486/manN)*totalOpen*Math.pow(hydraulicRadius,2/3):0;
+  return{outerW,outerH,trenchW,trenchH,excav:trenchW*trenchH,openPerBarrel,totalOpen,wettedPerim,hydraulicRadius,manN,conveyance};
+}
+function cpTrenchLine(i){return isPrecastBox()?rcbTrenchLine(i):compPipeTrenchLine(i);}
+function activeLines(){return Array.from({length:15},(_,i)=>i).filter(i=>(S.diam.ct[i]?.d||S.diam.ct[i]?.lf||S.diam.cp[i]?.d||S.diam.cp[i]?.lf));}
+
+// Per-line excavation / backfill in CY (using Section 3 LF)
+function excavationCYLine(i,side){
+  const lf=side==='ct'?(S.diam.ct[i]?.lf||0):(S.diam.cp[i]?.lf||0);
+  if(!lf)return 0;
+  return(side==='ct'?cmpTrenchLine(i):cpTrenchLine(i)).excav*lf/27;
+}
+function backfillCYLine(i,side){
+  const lf=side==='ct'?(S.diam.ct[i]?.lf||0):(S.diam.cp[i]?.lf||0);
+  if(!lf)return 0;
+  const c=side==='ct'?cmpTrenchLine(i):cpTrenchLine(i);
+  return Math.max(0,(c.excav-c.totalOpen)*lf/27);
+}
+
+// Replace aggregate functions (previously used S.rcb single comparison)
+function excavationCY(side){return activeLines().reduce((s,i)=>s+excavationCYLine(i,side),0);}
+function backfillCY(side){return activeLines().reduce((s,i)=>s+backfillCYLine(i,side),0);}
+
+let _rCostsTimer=null;
+function rCostsDebounced(){clearTimeout(_rCostsTimer);_rCostsTimer=setTimeout(rCosts,450);}
+
+function toggleRcbLine(i){
+  S.rcbLines[i].collapsed=!S.rcbLines[i].collapsed;
+  const card=document.getElementById('rcbl-'+i);
+  if(card)card.outerHTML=rcbLineCardHtml(i);
+}
 function manningDefaultCp(){
   if(isPrecastBox())return MANNING_N.box;
   const name=(S.compProduct+' '+S.compName).toLowerCase();
@@ -472,14 +558,6 @@ function trenchCalcs(){
   return {ctCalc:cmpTrench(), cpCalc:isPrecastBox()?rcbTrench():compPipeTrench()};
 }
 function jbTotal(side){return Object.entries(S.fit[side]).reduce((s,[id,v])=>s+(v.on?(v.qty||0)*(v.cost||0):0),0);}
-// Returns CY of backfill for a given side, using trench calc and project LF from material section
-function backfillCY(side){
-  const lf=totalLF(side);
-  if(lf===0)return 0;
-  const {ctCalc,cpCalc}=trenchCalcs();
-  const calc=side==='ct'?ctCalc:cpCalc;
-  return Math.max(0,(calc.excav-calc.totalOpen)*lf)/27;
-}
 // Returns total $ backfill cost (lump sum, not $/LF)
 function backfillTotal(side){
   const rate=side==='ct'?S.backfill.ctCost:S.backfill.cpCost;
@@ -493,16 +571,8 @@ function backfillTotal(side){
 }
 function totalLF(side){return S.diam[side].reduce((s,r)=>s+(r.lf||0),0);}
 function materialTotal(side){return S.diam[side].reduce((s,r)=>s+(r.c||0)*(r.lf||0),0);}
-// Returns CY of excavation for a side using trench calc × project LF
-function excavationCY(side){
-  const lf=totalLF(side);
-  if(lf===0)return 0;
-  const {ctCalc,cpCalc}=trenchCalcs();
-  return (side==='ct'?ctCalc:cpCalc).excav*lf/27;
-}
-// Returns total $ excavation cost (lump sum, $/CY × CY)
 function excavationTotal(side){
-  const rate=side==='ct'?S.exc.ct:S.exc.cp; // now $/CY
+  const rate=side==='ct'?S.exc.ct:S.exc.cp;
   return (rate||0)*excavationCY(side);
 }
 function otherPerLF(side){
@@ -514,12 +584,24 @@ function rProduct(){
   let h=`<div class="card ac"><div class="sh"><div class="sn">1</div><div><div class="st">Select Contech product</div><div class="ss">Choose the product you are presenting</div></div></div>
   <div class="product-tiles">`;
   PRODUCTS.forEach(p=>{h+=`<div class="tile${S.product===p?' sel':''}" onclick="S.product='${p}';S.installChip=null;rProduct()"><div class="tile-name">${p}</div></div>`;});
-  h+=`</div>`;
+  h+=`</div>
+  <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin:10px 0 4px;padding:8px 12px;background:var(--color-background-secondary);border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary)">
+    <span style="font-size:10px;font-weight:700;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.5px">Input field key</span>
+    <span style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--color-text-primary)">
+      <span style="display:inline-block;width:28px;height:14px;border-radius:3px;background:#EBF4FD;border:1px solid #7CB9E8"></span>
+      <strong>Contech</strong> inputs
+    </span>
+    <span style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--color-text-primary)">
+      <span style="display:inline-block;width:28px;height:14px;border-radius:3px;background:#FFFCE6;border:1px solid #D4B94A"></span>
+      <strong>Competitor</strong> inputs
+    </span>
+    <span style="font-size:10px;color:var(--color-text-secondary)">Color coding applies throughout all input sections</span>
+  </div>`;
   if(S.product){
     h+=`<div style="margin-top:1rem"><div class="lbl" style="margin-bottom:6px">Competitor information <span style="color:#A32D2D">*</span></div>
     <div class="two-col">
-      <div><div class="lbl">Competitor company name</div><input type="text" id="cn" placeholder="e.g. Advanced Drainage Systems" value="${S.compName}" oninput="S.compName=this.value"><div class="err-msg" id="ecn">Required</div></div>
-      <div><div class="lbl">Competitor product name</div><input type="text" id="cpn" placeholder="e.g. N-12 HDPE pipe" value="${S.compProduct}" oninput="S.compProduct=this.value"><div class="err-msg" id="ecp">Required</div><div style="font-size:10px;color:var(--color-text-secondary);margin-top:4px;line-height:1.4">💡 Type <strong>Precast Box</strong> to unlock product-specific box culvert inputs in the trench excavation comparison</div></div>
+      <div class="inp-cp"><div class="lbl">Competitor company name</div><input type="text" id="cn" placeholder="e.g. Advanced Drainage Systems" value="${S.compName}" oninput="S.compName=this.value"><div class="err-msg" id="ecn"></div><div style="font-size:10px;color:var(--color-text-secondary);margin-top:3px;font-style:italic">Optional — leave blank if unknown</div></div>
+      <div class="inp-cp"><div class="lbl">Competitor product name</div><input type="text" id="cpn" placeholder="e.g. N-12 HDPE pipe" value="${S.compProduct}" oninput="S.compProduct=this.value"><div class="err-msg" id="ecp">Required</div><div style="font-size:10px;color:var(--color-text-secondary);margin-top:4px;line-height:1.4">💡 Type <strong>Precast Box</strong> to unlock product-specific box culvert inputs in the trench excavation comparison</div></div>
     </div></div>
     <div class="nav-row"><div class="dots"><div class="dot on"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
     <button class="btn pri" onclick="nextP()">Next: Project context ›</button></div>`;
@@ -532,8 +614,8 @@ function nextP(){
   S.compName=(document.getElementById('cn').value||'').trim();
   S.compProduct=(document.getElementById('cpn').value||'').trim();
   let ok=true;
-  if(!S.compName){document.getElementById('cn').classList.add('err');document.getElementById('ecn').style.display='block';ok=false;}
-  else{document.getElementById('cn').classList.remove('err');document.getElementById('ecn').style.display='none';}
+  // Competitor name is optional — clear any error state
+  document.getElementById('cn').classList.remove('err');document.getElementById('ecn').style.display='none';
   if(!S.compProduct){document.getElementById('cpn').classList.add('err');document.getElementById('ecp').style.display='block';ok=false;}
   else{document.getElementById('cpn').classList.remove('err');document.getElementById('ecp').style.display='none';}
   if(!ok)return;
@@ -609,18 +691,23 @@ function diamRowsHtml(side){
   const badgeClass=side==='ct'?'badge-ct':'badge-cp';
   const badgeText=side==='ct'?'Contech':'Competitor';
   const labelName=side==='ct'?S.product:(S.compName||'Competitor');
+  const n=S.visibleDiamLines;
   let rows='';
-  for(let i=0;i<5;i++){
+  for(let i=0;i<n;i++){
     const r=S.diam[side][i];
-    rows+=`<div class="diam-row">
-      <div><div class="diam-mini-lbl">Diameter${i===0?' (optional)':''}</div><input type="text" placeholder='e.g. 18"' value="${r.d||''}" oninput="S.diam.${side}[${i}].d=this.value"></div>
+    const hasData=r.d||r.c||r.lf;
+    rows+=`<div class="diam-row" style="position:relative">
+      <div style="display:flex;align-items:flex-end;gap:5px">
+        <div class="line-badge" style="flex-shrink:0;width:18px;height:18px;border-radius:50%;background:${hasData?(side==='ct'?'#1a4a7a':'#5c5c54'):'#ccc'};color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-bottom:2px">${i+1}</div>
+        <div style="flex:1"><div class="diam-mini-lbl">Diameter${i===0?' (optional)':''}</div><input type="text" placeholder='e.g. 18"' value="${r.d||''}" oninput="S.diam.${side}[${i}].d=this.value" onblur="rCosts()"></div>
+      </div>
       <div><div class="diam-mini-lbl">$/LF</div><input type="number" placeholder="0.00" min="0" step="0.01" value="${r.c||''}" oninput="S.diam.${side}[${i}].c=+this.value||0;updateDiamTotals('${side}')"></div>
-      <div><div class="diam-mini-lbl">Total LF</div><input type="number" placeholder="0" min="0" step="1" value="${r.lf||''}" oninput="S.diam.${side}[${i}].lf=+this.value||0;updateDiamTotals('${side}');updateDerived('${side}')"></div>
+      <div><div class="diam-mini-lbl">Total LF</div><input type="number" placeholder="0" min="0" step="1" value="${r.lf||''}" oninput="S.diam.${side}[${i}].lf=+this.value||0;updateDiamTotals('${side}');updateDerived('${side}')" onblur="rCosts()"></div>
     </div>`;
   }
   const lf=totalLF(side);
   const mat=materialTotal(side);
-  return `<div class="eq-product-block">
+  return `<div class="eq-product-block inp-${side}">
     <div class="eq-product-hdr"><span class="col-badge ${badgeClass}">${badgeText}</span><span class="col-title">${labelName}</span></div>
     ${rows}
     <div class="diam-totals" id="diamtot-${side}"><span>Total length: <strong>${lf.toLocaleString()} LF</strong></span><span>Material subtotal: <strong>$${mat.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></span></div>
@@ -647,7 +734,8 @@ function backfillBlockHtml(side){
   return `<div class="eq-product-block">
     <div class="eq-product-hdr"><span class="col-badge ${badgeClass}">${badgeText}</span><span class="col-title">${labelName}</span></div>
     <div class="two-col">
-      <div><div class="lbl">Backfill type</div>
+      <div class="inp-${side}">
+        <div class="lbl">Backfill type</div>
         <select id="bf-type-${side}" onchange="S.backfill.${side==='ct'?'ctType':'cpType'}=this.value;rCosts()">${typeO}</select>
       </div>
       <div><div class="lbl">Backfill cost ($/CY)</div>
@@ -949,11 +1037,201 @@ function rcbCardHtml(){
   </div>`;
 }
 
+function rcbLineCardHtml(i){
+  const ln=S.rcbLines[i];
+  const ct=S.diam.ct[i],cp=S.diam.cp[i];
+  const ctDiam=ct?.d||'—',cpDiam=cp?.d||'—';
+  const ctLFrow=ct?.lf||0,cpLFrow=cp?.lf||0;
+  const ctC=cmpTrenchLine(i),cpC=cpTrenchLine(i);
+  const ctExcCY=ctLFrow>0?(ctC.excav*ctLFrow/27):0;
+  const cpExcCY=cpLFrow>0?(cpC.excav*cpLFrow/27):0;
+  const ctBFCY=ctLFrow>0?Math.max(0,(ctC.excav-ctC.totalOpen)*ctLFrow/27):0;
+  const cpBFCY=cpLFrow>0?Math.max(0,(cpC.excav-cpC.totalOpen)*cpLFrow/27):0;
+  const pbx=isPrecastBox();
+  const ctLabel=`Contech ${S.product||''} — ${ctDiam}`;
+  const cpLabel=pbx?`${S.compName||'Competitor'} Precast Box`:`${S.compName||'Competitor'} — ${cpDiam}`;
+  const collapsed=ln.collapsed;
+  const fmt1=(v)=>v>0?v.toFixed(1):'—';
+  const fmt2=(v)=>v>0?v.toFixed(2):'—';
+  const fmt3=(v)=>v>0?v.toFixed(3):'—';
+  const fmtCY=(v)=>v>0?v.toLocaleString('en-US',{maximumFractionDigits:1})+' CY':'—';
+  const fmtK=(v)=>v>0?v.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1}):'—';
+  const inpCt=(field,val,ph,step,handler)=>`<input type="number" min="0" step="${step}" placeholder="${ph}" value="${val||''}" oninput="S.rcbLines[${i}].${field}=${+step>=1?'+this.value||0':'this.value||0'};updateRcbLineResults(${i})" style="width:100%;border:0.5px solid var(--color-border-secondary);border-radius:4px;padding:4px 6px;font-size:13px;background:var(--color-background-secondary);color:var(--color-text-primary)">`;
+  const inpCp=(field,val,ph,step)=>`<input type="number" min="0" step="${step}" placeholder="${ph}" value="${val||''}" oninput="S.rcbLines[${i}].${field}=${+step>=1?'+this.value||0':'this.value||0'};updateRcbLineResults(${i})" style="width:100%;border:0.5px solid var(--color-border-secondary);border-radius:4px;padding:4px 6px;font-size:13px;background:var(--color-background-secondary);color:var(--color-text-primary)">`;
+
+  return `<div class="rcb-line-card" id="rcbl-${i}">
+    <div class="rcb-line-hdr" onclick="toggleRcbLine(${i})" style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:var(--border-radius-md);background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);margin-bottom:${collapsed?'0':'6px'}">
+      <div style="width:22px;height:22px;border-radius:50%;background:#1a4a7a;color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</div>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:600;color:var(--color-text-primary)">Line ${i+1} &nbsp;<span style="color:#1a4a7a">${ctLabel}</span> <span style="color:var(--color-text-secondary)">vs</span> <span style="color:var(--color-text-secondary)">${cpLabel}</span></div>
+        ${collapsed&&(ctC.excav>0||cpC.excav>0)?`<div style="font-size:10px;color:var(--color-text-secondary);margin-top:2px">
+          Contech: ${fmt1(ctC.excav)} cu ft/LF excav · ${fmtCY(ctExcCY)} total &nbsp;|&nbsp; ${cpLabel}: ${fmt1(cpC.excav)} cu ft/LF excav · ${fmtCY(cpExcCY)} total
+        </div>`:''}
+      </div>
+      <div id="rcblc-${i}" style="font-size:14px;color:var(--color-text-secondary);transition:transform .15s">${collapsed?'▸':'▾'}</div>
+    </div>
+    <div id="rcblb-${i}" style="display:${collapsed?'none':'block'};padding:12px 14px;border:0.5px solid var(--color-border-tertiary);border-top:none;border-radius:0 0 var(--border-radius-md) var(--border-radius-md);margin-bottom:8px;background:var(--color-background-primary)">
+      <!-- Two-column inputs -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <!-- Contech side -->
+        <div style="background:#E6F1FB;border-radius:var(--border-radius-md);padding:10px;border:0.5px solid #B5D4F4">
+          <div style="font-size:10px;font-weight:700;color:#0C3460;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Contech — ${S.product||''} · ${ctDiam} dia.</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
+            <div><div style="font-size:9px;color:#185FA5;font-weight:600;margin-bottom:2px">Barrels</div>${inpCt('cmpBarrels',ln.cmpBarrels,'1','1','')}</div>
+            <div><div style="font-size:9px;color:#185FA5;font-weight:600;margin-bottom:2px">Barrel spacing (in)</div>${inpCt('cmpSpacing',ln.cmpSpacing,'0','1','')}</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
+            <div><div style="font-size:9px;color:#185FA5;font-weight:600;margin-bottom:2px">Bedding (in)</div>${inpCt('cmpBedding',ln.cmpBedding,'12','1','')}</div>
+            <div><div style="font-size:9px;color:#185FA5;font-weight:600;margin-bottom:2px">Working room/side (in)</div>${inpCt('cmpWorkRoom',ln.cmpWorkRoom,'18','1','')}</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <div><div style="font-size:9px;color:#185FA5;font-weight:600;margin-bottom:2px">Cover (ft)</div>${inpCt('cmpCover',ln.cmpCover,'0','0.5','')}</div>
+            <div><div style="font-size:9px;color:#185FA5;font-weight:600;margin-bottom:2px">Manning's n</div><input type="number" min="0.001" max="0.1" step="0.001" value="${(+(ln.ctManning||0)||manningDefaultCt()).toFixed(3)}" oninput="S.rcbLines[${i}].ctManning=+this.value||0;updateRcbLineResults(${i})" style="width:100%;border:0.5px solid #7CB9E8;border-radius:4px;padding:4px 6px;font-size:13px;background:#fff;color:#0C3460"></div>
+          </div>
+          ${ctLFrow>0?`<div style="margin-top:8px;padding-top:8px;border-top:0.5px solid #B5D4F4;font-size:10px;color:#185FA5">Section 3 LF: <strong>${ctLFrow.toLocaleString()}</strong></div>`:'<div style="margin-top:6px;font-size:9px;color:#888">Enter LF in Section 3 for volume totals</div>'}
+        </div>
+        <!-- Competitor side -->
+        <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px;border:0.5px solid var(--color-border-secondary)">
+          <div style="font-size:10px;font-weight:700;color:var(--color-text-primary);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">${cpLabel}</div>
+          ${pbx?`
+          <div style="margin-bottom:6px;padding:6px 8px;background:#FFFCE6;border-radius:4px;border:1.5px solid #D4B94A">
+            <div style="font-size:8px;font-weight:700;color:#7a6800;text-transform:uppercase;letter-spacing:.3px;margin-bottom:5px">⚠ Box opening dimensions — required for this line</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:5px">
+              <div><div style="font-size:9px;color:#7a6800;font-weight:600;margin-bottom:2px">Span (ft)</div>${inpCp('span',ln.span,'e.g. 8','0.5')}</div>
+              <div><div style="font-size:9px;color:#7a6800;font-weight:600;margin-bottom:2px">Rise (ft)</div>${inpCp('rise',ln.rise,'e.g. 6','0.5')}</div>
+            </div>
+            <div style="font-size:8px;font-weight:700;color:#7a6800;text-transform:uppercase;letter-spacing:.3px;margin-bottom:5px">Section thicknesses</div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px">
+              <div><div style="font-size:9px;color:#7a6800;font-weight:600;margin-bottom:2px">Wall (in)</div>${inpCp('wall',ln.wall||6,'6','1')}</div>
+              <div><div style="font-size:9px;color:#7a6800;font-weight:600;margin-bottom:2px">Top slab (in)</div>${inpCp('topSlab',ln.topSlab||6,'6','1')}</div>
+              <div><div style="font-size:9px;color:#7a6800;font-weight:600;margin-bottom:2px">Bot slab (in)</div>${inpCp('botSlab',ln.botSlab||6,'6','1')}</div>
+              <div><div style="font-size:9px;color:#7a6800;font-weight:600;margin-bottom:2px">Haunch (in)</div>${inpCp('haunch',ln.haunch||12,'12','1')}</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
+            <div><div style="font-size:9px;color:var(--color-text-secondary);font-weight:600;margin-bottom:2px">Runs</div>${inpCp('runs',ln.runs,'1','1')}</div>
+            <div><div style="font-size:9px;color:var(--color-text-secondary);font-weight:600;margin-bottom:2px">Run spacing (in)</div>${inpCp('runSpacing',ln.runSpacing,'0','1')}</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
+            <div><div style="font-size:9px;color:var(--color-text-secondary);font-weight:600;margin-bottom:2px">Bedding (in)</div>${inpCp('bedding',ln.bedding,'12','1')}</div>
+            <div><div style="font-size:9px;color:var(--color-text-secondary);font-weight:600;margin-bottom:2px">Working room/side (in)</div>${inpCp('workRoom',ln.workRoom,'18','1')}</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <div><div style="font-size:9px;color:var(--color-text-secondary);font-weight:600;margin-bottom:2px">Cover (ft)</div>${inpCp('rcbCover',ln.rcbCover,'0','0.5')}</div>
+            <div><div style="font-size:9px;color:var(--color-text-secondary);font-weight:600;margin-bottom:2px">Manning's n</div><input type="number" min="0.001" max="0.1" step="0.001" value="${(+(ln.cpManning||0)||manningDefaultCp()).toFixed(3)}" oninput="S.rcbLines[${i}].cpManning=+this.value||0;updateRcbLineResults(${i})" style="width:100%;border:0.5px solid #D4B94A;border-radius:4px;padding:4px 6px;font-size:13px;background:#FFFCE6;color:var(--color-text-primary)"></div>
+          </div>`:`
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
+            <div><div style="font-size:9px;color:var(--color-text-secondary);font-weight:600;margin-bottom:2px">Barrels</div>${inpCp('cpBarrels',ln.cpBarrels,'1','1')}</div>
+            <div><div style="font-size:9px;color:var(--color-text-secondary);font-weight:600;margin-bottom:2px">Barrel spacing (in)</div>${inpCp('cpSpacing',ln.cpSpacing,'0','1')}</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
+            <div><div style="font-size:9px;color:var(--color-text-secondary);font-weight:600;margin-bottom:2px">Bedding (in)</div>${inpCp('cpBedding',ln.cpBedding,'12','1')}</div>
+            <div><div style="font-size:9px;color:var(--color-text-secondary);font-weight:600;margin-bottom:2px">Working room/side (in)</div>${inpCp('cpWorkRoom',ln.cpWorkRoom,'18','1')}</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <div><div style="font-size:9px;color:var(--color-text-secondary);font-weight:600;margin-bottom:2px">Cover (ft)</div>${inpCp('cpCover',ln.cpCover,'0','0.5')}</div>
+            <div><div style="font-size:9px;color:var(--color-text-secondary);font-weight:600;margin-bottom:2px">Manning's n</div><input type="number" min="0.001" max="0.1" step="0.001" value="${(+(ln.cpManning||0)||manningDefaultCp()).toFixed(3)}" oninput="S.rcbLines[${i}].cpManning=+this.value||0;updateRcbLineResults(${i})" style="width:100%;border:0.5px solid var(--color-border-secondary);border-radius:4px;padding:4px 6px;font-size:13px;background:var(--color-background-primary);color:var(--color-text-primary)"></div>
+          </div>`}
+          ${cpLFrow>0?`<div style="margin-top:8px;padding-top:8px;border-top:0.5px solid var(--color-border-tertiary);font-size:10px;color:var(--color-text-secondary)">Section 3 LF: <strong>${cpLFrow.toLocaleString()}</strong></div>`:'<div style="margin-top:6px;font-size:9px;color:#888">Enter LF in Section 3 for volume totals</div>'}
+        </div>
+      </div>
+      <!-- Results grid -->
+      <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:5px;font-size:11px" id="rcblr-${i}">
+        <div style="font-size:9px;font-weight:700;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.4px;padding:4px 0;grid-column:1/-1;border-top:0.5px solid var(--color-border-tertiary)">Results — updates as you type</div>
+        <div></div>
+        <div style="text-align:center;font-size:9px;font-weight:700;color:#0C3460;padding:2px">Contech ${S.product||''}</div>
+        <div style="text-align:center;font-size:9px;font-weight:700;color:var(--color-text-secondary);padding:2px">${isPrecastBox()?'Precast Box':S.compName||'Competitor'}</div>
+
+        <div style="color:var(--color-text-secondary)">Trench width</div>
+        <div style="text-align:center;background:#E6F1FB;border-radius:4px;padding:4px"><span id="rcblr-ctW-${i}" style="font-weight:700;color:#0C447C">${fmt2(ctC.trenchW)}</span><span style="font-size:9px;color:#185FA5"> ft</span></div>
+        <div style="text-align:center;background:var(--color-background-secondary);border-radius:4px;padding:4px"><span id="rcblr-cpW-${i}" style="font-weight:700">${fmt2(cpC.trenchW)}</span><span style="font-size:9px;color:var(--color-text-secondary)"> ft</span></div>
+
+        <div style="color:var(--color-text-secondary)">Trench depth</div>
+        <div style="text-align:center;background:#E6F1FB;border-radius:4px;padding:4px"><span id="rcblr-ctD-${i}" style="font-weight:700;color:#0C447C">${fmt2(ctC.trenchH)}</span><span style="font-size:9px;color:#185FA5"> ft</span></div>
+        <div style="text-align:center;background:var(--color-background-secondary);border-radius:4px;padding:4px"><span id="rcblr-cpD-${i}" style="font-weight:700">${fmt2(cpC.trenchH)}</span><span style="font-size:9px;color:var(--color-text-secondary)"> ft</span></div>
+
+        <div style="color:var(--color-text-secondary);font-weight:600">Excavation (cu ft/LF)</div>
+        <div style="text-align:center;background:#E6F1FB;border-radius:4px;padding:5px"><span id="rcblr-ctE-${i}" style="font-size:15px;font-weight:700;color:#0C447C">${fmt1(ctC.excav)}</span></div>
+        <div style="text-align:center;background:var(--color-background-secondary);border-radius:4px;padding:5px"><span id="rcblr-cpE-${i}" style="font-size:15px;font-weight:700">${fmt1(cpC.excav)}</span></div>
+
+        <div style="color:var(--color-text-secondary)">Open area (ft²)</div>
+        <div style="text-align:center;background:#E6F1FB;border-radius:4px;padding:4px"><span id="rcblr-ctA-${i}" style="font-weight:700;color:#0C447C">${fmt2(ctC.totalOpen)}</span></div>
+        <div style="text-align:center;background:var(--color-background-secondary);border-radius:4px;padding:4px"><span id="rcblr-cpA-${i}" style="font-weight:700">${fmt2(cpC.totalOpen)}</span></div>
+
+        <div style="color:var(--color-text-secondary)">Wetted perim./barrel</div>
+        <div style="text-align:center;background:#E6F1FB;border-radius:4px;padding:4px"><span id="rcblr-ctWP-${i}" style="font-weight:700;color:#0C447C">${fmt2(ctC.wettedPerim)}</span><span style="font-size:9px;color:#185FA5"> ft</span></div>
+        <div style="text-align:center;background:var(--color-background-secondary);border-radius:4px;padding:4px"><span id="rcblr-cpWP-${i}" style="font-weight:700">${fmt2(cpC.wettedPerim)}</span><span style="font-size:9px;color:var(--color-text-secondary)"> ft</span></div>
+
+        <div style="color:var(--color-text-secondary)">Hydraulic radius</div>
+        <div style="text-align:center;background:#E6F1FB;border-radius:4px;padding:4px"><span id="rcblr-ctR-${i}" style="font-weight:700;color:#0C447C">${fmt3(ctC.hydraulicRadius)}</span><span style="font-size:9px;color:#185FA5"> ft</span></div>
+        <div style="text-align:center;background:var(--color-background-secondary);border-radius:4px;padding:4px"><span id="rcblr-cpR-${i}" style="font-weight:700">${fmt3(cpC.hydraulicRadius)}</span><span style="font-size:9px;color:var(--color-text-secondary)"> ft</span></div>
+
+        <div style="color:var(--color-text-secondary);font-weight:600">Conveyance K</div>
+        <div style="text-align:center;background:#E6F1FB;border-radius:4px;padding:5px"><span id="rcblr-ctK-${i}" style="font-size:15px;font-weight:700;color:#0C447C">${fmtK(ctC.conveyance)}</span><span style="font-size:9px;color:#185FA5"> cfs</span></div>
+        <div style="text-align:center;background:var(--color-background-secondary);border-radius:4px;padding:5px"><span id="rcblr-cpK-${i}" style="font-size:15px;font-weight:700">${fmtK(cpC.conveyance)}</span><span style="font-size:9px;color:var(--color-text-secondary)"> cfs</span></div>
+
+        ${ctLFrow>0||cpLFrow>0?`
+        <div style="grid-column:1/-1;border-top:0.5px solid var(--color-border-tertiary);padding-top:4px;font-size:9px;font-weight:700;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.4px">Project totals (from Section 3 LF)</div>
+        <div style="color:var(--color-text-secondary)">Total excavation</div>
+        <div style="text-align:center;background:#E6F1FB;border-radius:4px;padding:4px"><span id="rcblr-ctXCY-${i}" style="font-weight:700;color:#0C447C">${fmtCY(ctExcCY)}</span></div>
+        <div style="text-align:center;background:var(--color-background-secondary);border-radius:4px;padding:4px"><span id="rcblr-cpXCY-${i}" style="font-weight:700">${fmtCY(cpExcCY)}</span></div>
+        <div style="color:var(--color-text-secondary)">Est. backfill</div>
+        <div style="text-align:center;background:#E6F1FB;border-radius:4px;padding:4px"><span id="rcblr-ctBCY-${i}" style="font-weight:700;color:#0C447C">${fmtCY(ctBFCY)}</span></div>
+        <div style="text-align:center;background:var(--color-background-secondary);border-radius:4px;padding:4px"><span id="rcblr-cpBCY-${i}" style="font-weight:700">${fmtCY(cpBFCY)}</span></div>
+        `:''}
+      </div>
+    </div>
+  </div>`;
+}
+
+function rcbLinesHtml(){
+  const active=activeLines();
+  if(!active.length)return`<div class="card ac" style="margin-bottom:.75rem;text-align:center;padding:24px;color:var(--color-text-secondary);font-size:12px">
+    <div class="sh" style="justify-content:center;margin-bottom:8px"><div class="sn" style="background:#1a4a7a;font-size:8px;letter-spacing:-.5px">TEC</div><div><div class="st">Trench Excavation Comparison</div></div></div>
+    Enter at least one diameter or footage in Section 3 above to generate per-line trench comparisons.
+  </div>`;
+  const pbx=isPrecastBox();
+  const sharedBox=''; // Box dimensions are now entered per-line within each line card
+  const pbxBanner=pbx?`<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:#FFFCE6;border:1.5px solid #D4B94A;border-radius:var(--border-radius-md);margin-bottom:10px;font-size:11px;color:#7a6800">
+    <span style="font-size:18px;line-height:1;flex-shrink:0">⚠</span>
+    <div><strong>Precast box detected.</strong> Box opening dimensions (span, rise) and section thicknesses must be entered for each line item below. Expand each line to enter dimensions — the yellow fields inside the competitor column are required for accurate trench calculations.</div>
+  </div>`:'';
+  return`<div class="card ac" style="margin-bottom:.75rem">
+    <div class="sh"><div class="sn" style="background:#1a4a7a;font-size:8px;letter-spacing:-.5px">TEC</div><div><div class="st">Trench Excavation Comparison</div><div class="ss">${active.length} line${active.length!==1?'s':''} from Section 3 — click a line to expand inputs and results</div></div></div>
+    ${sharedBox}
+    ${pbxBanner}
+    ${active.map(i=>rcbLineCardHtml(i)).join('')}
+    <div class="info" style="margin-top:6px">Diameters auto-populate from Section 3. Footage totals from Section 3 LF. Project cost calculations aggregate CY across all lines at the $/CY rates in Section 4.</div>
+  </div>`;
+}
+
+function updateRcbLineResults(i){
+  const ct=cmpTrenchLine(i),cp=cpTrenchLine(i);
+  const ctLF=S.diam.ct[i]?.lf||0,cpLF=S.diam.cp[i]?.lf||0;
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  const f1=v=>v>0?v.toFixed(1):'—',f2=v=>v>0?v.toFixed(2):'—',f3=v=>v>0?v.toFixed(3):'—';
+  const fK=v=>v>0?v.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1}):'—';
+  const fCY=v=>v>0?v.toLocaleString('en-US',{maximumFractionDigits:1})+' CY':'—';
+  set(`rcblr-ctW-${i}`,f2(ct.trenchW));set(`rcblr-cpW-${i}`,f2(cp.trenchW));
+  set(`rcblr-ctD-${i}`,f2(ct.trenchH));set(`rcblr-cpD-${i}`,f2(cp.trenchH));
+  set(`rcblr-ctE-${i}`,f1(ct.excav));set(`rcblr-cpE-${i}`,f1(cp.excav));
+  set(`rcblr-ctA-${i}`,f2(ct.totalOpen));set(`rcblr-cpA-${i}`,f2(cp.totalOpen));
+  set(`rcblr-ctWP-${i}`,f2(ct.wettedPerim));set(`rcblr-cpWP-${i}`,f2(cp.wettedPerim));
+  set(`rcblr-ctR-${i}`,f3(ct.hydraulicRadius));set(`rcblr-cpR-${i}`,f3(cp.hydraulicRadius));
+  set(`rcblr-ctK-${i}`,fK(ct.conveyance));set(`rcblr-cpK-${i}`,fK(cp.conveyance));
+  if(ctLF>0||cpLF>0){
+    const ctXCY=ctLF>0?ct.excav*ctLF/27:0,cpXCY=cpLF>0?cp.excav*cpLF/27:0;
+    const ctBCY=ctLF>0?Math.max(0,(ct.excav-ct.totalOpen)*ctLF/27):0,cpBCY=cpLF>0?Math.max(0,(cp.excav-cp.totalOpen)*cpLF/27):0;
+    set(`rcblr-ctXCY-${i}`,fCY(ctXCY));set(`rcblr-cpXCY-${i}`,fCY(cpXCY));
+    set(`rcblr-ctBCY-${i}`,fCY(ctBCY));set(`rcblr-cpBCY-${i}`,fCY(cpBCY));
+  }
+}
+
 function rCosts(){
   const ct=S.product;const cpFull=`${S.compName||'Competitor'} — ${S.compProduct||'product'}`;
-  const rcbCard=rcbCardHtml();
+  const rcbCard=rcbLinesHtml();
   const matCard=`<div class="card ac" style="margin-bottom:.75rem">
-    <div class="sh"><div class="sn">3</div><div><div class="st">Delivered material cost & project length</div><div class="ss">Enter up to 5 diameters per product with $/LF and total linear feet for each</div></div></div>
+    <div class="sh"><div class="sn">3</div><div><div class="st">Delivered material cost & project length</div><div class="ss">Enter diameter, $/LF, and total LF — use + to add more line items (up to 15)</div></div></div>
     ${diamRowsHtml('ct')}
     <div style="display:flex;align-items:center;gap:8px;margin:8px 0 2px">
       <div class="divider" style="flex:1;margin:0"></div>
@@ -964,14 +1242,20 @@ function rCosts(){
       <div class="divider" style="flex:1;margin:0"></div>
     </div>
     ${diamRowsHtml('cp')}
-    <div class="info">Leave rows blank if not needed — only filled rows count toward material cost and project length.</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px">
+      <div class="info" style="margin:0">Only filled rows count toward material cost, project length, and trench comparisons.</div>
+      ${S.visibleDiamLines<15?`<button onclick="S.visibleDiamLines=Math.min(15,S.visibleDiamLines+1);rCosts()" style="flex-shrink:0;margin-left:10px;display:flex;align-items:center;gap:5px;padding:5px 12px;background:#1a4a7a;color:#fff;border:none;border-radius:var(--border-radius-md);font-size:11px;font-weight:600;cursor:pointer">
+        <span style="font-size:15px;line-height:1">+</span> Add line item
+        <span style="opacity:.7;font-size:10px">${S.visibleDiamLines}/15</span>
+      </button>`:`<div style="font-size:10px;color:var(--color-text-secondary);margin-left:10px">Max 15 lines reached</div>`}
+    </div>
   </div>`;
 
   const excCard=`<div class="card ac" style="margin-bottom:.75rem"><div class="sh"><div class="sn">4</div><div><div class="st">Excavation & trenching</div><div class="ss">Enter $/CY — volume is calculated from trench comparison × project footage</div></div></div>
     <div class="two-col">
-      <div><div class="col-hdr"><span class="col-badge badge-ct">Contech</span><span class="col-title">${ct}</span></div><div class="lbl">Rate ($/CY)</div><input type="number" id="exc-ct" placeholder="0.00" min="0" step="0.01" value="${S.exc.ct||''}" oninput="S.exc.ct=+this.value||0;updateExcSub()">
+      <div class="inp-ct"><div class="col-hdr"><span class="col-badge badge-ct">Contech</span><span class="col-title">${ct}</span></div><div class="lbl">Rate ($/CY)</div><input type="number" id="exc-ct" placeholder="0.00" min="0" step="0.01" value="${S.exc.ct||''}" oninput="S.exc.ct=+this.value||0;updateExcSub()">
         <div class="backfill-subtotal" id="excsub-ct" style="margin-top:8px">${(()=>{const cy=excavationCY('ct'),tot=excavationTotal('ct'),rate=S.exc.ct;return cy>0?`Volume: <strong>${cy.toLocaleString('en-US',{maximumFractionDigits:1})} CY</strong> &nbsp;·&nbsp; Total: <strong>$${tot.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</strong>`:rate>0?'<span style="color:#A32D2D;font-size:10px">Enter pipe dimensions in trench comparison to calculate volume</span>':'Enter rate above — volume from trench comparison';})()}</div></div>
-      <div><div class="col-hdr"><span class="col-badge badge-cp">Competitor</span><span class="col-title">${cpFull}</span></div><div class="lbl">Rate ($/CY)</div><input type="number" id="exc-cp" placeholder="0.00" min="0" step="0.01" value="${S.exc.cp||''}" oninput="S.exc.cp=+this.value||0;updateExcSub()">
+      <div class="inp-cp"><div class="col-hdr"><span class="col-badge badge-cp">Competitor</span><span class="col-title">${cpFull}</span></div><div class="lbl">Rate ($/CY)</div><input type="number" id="exc-cp" placeholder="0.00" min="0" step="0.01" value="${S.exc.cp||''}" oninput="S.exc.cp=+this.value||0;updateExcSub()">
         <div class="backfill-subtotal" id="excsub-cp" style="margin-top:8px">${(()=>{const cy=excavationCY('cp'),tot=excavationTotal('cp'),rate=S.exc.cp;return cy>0?`Volume: <strong>${cy.toLocaleString('en-US',{maximumFractionDigits:1})} CY</strong> &nbsp;·&nbsp; Total: <strong>$${tot.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</strong>`:rate>0?'<span style="color:#A32D2D;font-size:10px">Enter pipe dimensions in trench comparison to calculate volume</span>':'Enter rate above — volume from trench comparison';})()}</div></div>
     </div>${geoHtml()}</div>`;
 
@@ -986,8 +1270,8 @@ function rCosts(){
   const instCard=`<div class="card ac" style="margin-bottom:.75rem"><div class="sh"><div class="sn">6</div><div><div class="st">Installation labor</div><div class="ss">Enter crew production rate to estimate project schedule and schedule cost advantage</div></div></div>
     ${installRefHtml()}
     <div class="rate-row">
-      <div><div class="col-hdr"><span class="col-badge badge-ct">Contech</span><span class="col-title">${ct}</span></div><div class="lbl">Install rate (LF/day)</div><input type="number" id="ir-ct" placeholder="e.g. 300" min="1" step="1" value="${S.instRateCt||''}" oninput="S.instRateCt=+this.value||0;updateDerived('ct')"><div class="rate-derived" id="drv-ct"><span class="rate-unit">Enter rate to estimate install duration</span></div></div>
-      <div><div class="col-hdr"><span class="col-badge badge-cp">Competitor</span><span class="col-title">${cpFull}</span></div><div class="lbl">Install rate (LF/day)</div><input type="number" id="ir-cp" placeholder="e.g. 200" min="1" step="1" value="${S.instRateCp||''}" oninput="S.instRateCp=+this.value||0;updateDerived('cp')"><div class="rate-derived" id="drv-cp"><span class="rate-unit">Enter rate to estimate install duration</span></div></div>
+      <div class="inp-ct"><div class="col-hdr"><span class="col-badge badge-ct">Contech</span><span class="col-title">${ct}</span></div><div class="lbl">Install rate (LF/day)</div><input type="number" id="ir-ct" placeholder="e.g. 300" min="1" step="1" value="${S.instRateCt||''}" oninput="S.instRateCt=+this.value||0;updateDerived('ct')"><div class="rate-derived" id="drv-ct"><span class="rate-unit">Enter rate to estimate install duration</span></div></div>
+      <div class="inp-cp"><div class="col-hdr"><span class="col-badge badge-cp">Competitor</span><span class="col-title">${cpFull}</span></div><div class="lbl">Install rate (LF/day)</div><input type="number" id="ir-cp" placeholder="e.g. 200" min="1" step="1" value="${S.instRateCp||''}" oninput="S.instRateCp=+this.value||0;updateDerived('cp')"><div class="rate-derived" id="drv-cp"><span class="rate-unit">Enter rate to estimate install duration</span></div></div>
     </div>
     <div class="divider"></div>
     <div class="sh" style="margin-bottom:10px"><div style="width:18px;height:18px;border-radius:50%;background:#1a4a7a;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;flex-shrink:0">$</div><div><div class="st" style="font-size:12px">Daily project overhead rate</div><div class="ss">All-in cost per working day — crew, equipment rental, traffic control, mobilization overhead</div></div></div>
@@ -1767,68 +2051,120 @@ function calculate(){
   const {ctCalc:rcbCt,cpCalc:rcbCp}=trenchCalcs();
   const CY=27;
   const pbx=isPrecastBox();
-  const rcbCtFt=+(S.rcb.cmpFootage||0), rcbCpFt=+(S.rcb.rcbFootage||0);
-  const rcbCpName=pbx?`Precast box (${S.rcb.runs}× ${S.rcb.span}′×${S.rcb.rise}′)`:(S.compName||'Competitor');
-  const rcbCtName=`Contech ${S.product} (${S.rcb.cmpBarrels}× ${S.rcb.cmpDiam}″)`;
-  const fmtCY2=(excav,ft)=>ft>0?((excav*ft)/CY).toLocaleString('en-US',{maximumFractionDigits:1})+' CY':'—';
-  const fmtBFCY2=(excav,open,ft)=>ft>0?(Math.max(0,(excav-open)*ft)/CY).toLocaleString('en-US',{maximumFractionDigits:1})+' CY':'—';
-  const rcbDiff=rcbCp.excav-rcbCt.excav;
-  const rcbSummaryBlock=`<div class="rcb-card" style="margin-bottom:1rem">
-    <div class="sh"><div class="sn" style="background:#1a4a7a;font-size:8px;letter-spacing:-.5px">TEC</div><div><div class="st">Trench excavation comparison</div><div class="ss">Contech ${S.product} vs. ${pbx?'precast box':S.compName||'competitor'} — trench sizing, excavation & backfill</div></div></div>
-    <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px">
-      <tr>
-        <th style="text-align:left;padding:4px 6px;font-size:10px;font-weight:600;color:var(--color-text-secondary);border-bottom:0.5px solid var(--color-border-tertiary)"></th>
-        <th style="text-align:center;padding:4px 6px;font-size:10px;font-weight:600;color:#0C3460;border-bottom:0.5px solid var(--color-border-tertiary)">Contech ${S.product}<br><span style="font-weight:400">${S.rcb.cmpBarrels}× ${S.rcb.cmpDiam}″ dia.</span></th>
-        <th style="text-align:center;padding:4px 6px;font-size:10px;font-weight:600;color:var(--color-text-secondary);border-bottom:0.5px solid var(--color-border-tertiary)">${pbx?'Precast box':S.compName||'Competitor'}<br><span style="font-weight:400">${pbx?S.rcb.runs+'× '+S.rcb.span+'′×'+S.rcb.rise+'′':((S.rcb.cpBarrels||1)+'× '+(S.rcb.cpDiam||0)+'″ dia.')}</span></th>
-      </tr>
-      <tr><td style="padding:4px 6px;color:var(--color-text-secondary)">Trench width</td>
-        <td style="text-align:center;padding:4px 6px;font-weight:600;color:#0C447C">${rcbCt.trenchW.toFixed(2)} ft</td>
-        <td style="text-align:center;padding:4px 6px;font-weight:600">${rcbCp.trenchW.toFixed(2)} ft</td></tr>
-      <tr style="background:var(--color-background-secondary)"><td style="padding:4px 6px;color:var(--color-text-secondary)">Trench depth</td>
-        <td style="text-align:center;padding:4px 6px;font-weight:600;color:#0C447C">${rcbCt.trenchH.toFixed(2)} ft</td>
-        <td style="text-align:center;padding:4px 6px;font-weight:600">${rcbCp.trenchH.toFixed(2)} ft</td></tr>
-      <tr style="border-top:1px solid var(--color-border-tertiary)"><td style="padding:5px 6px;font-weight:600">Excavation (cu ft/LF)</td>
-        <td style="text-align:center;padding:5px 6px;font-weight:700;font-size:15px;color:#0C447C;background:#E6F1FB;border-radius:4px">${rcbCt.excav.toFixed(1)}</td>
-        <td style="text-align:center;padding:5px 6px;font-weight:600;font-size:15px">${rcbCp.excav.toFixed(1)}</td></tr>
-      <tr style="background:var(--color-background-secondary)"><td style="padding:5px 6px;font-weight:600">Total open area (ft²)</td>
-        <td style="text-align:center;padding:5px 6px;font-weight:700;font-size:15px;color:#0C447C">${rcbCt.totalOpen.toFixed(2)}</td>
-        <td style="text-align:center;padding:5px 6px;font-weight:600;font-size:15px">${rcbCp.totalOpen.toFixed(2)}</td></tr>
-      <tr style="border-top:1px solid var(--color-border-tertiary)"><td style="padding:4px 6px;font-size:10px;font-weight:700;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.3px;background:var(--color-background-secondary)!important" colspan="3">Hydraulic Properties (full-flow per barrel)</td></tr>
-      <tr><td style="padding:4px 6px;font-weight:600">Manning's n</td>
-        <td style="text-align:center;padding:4px 6px;font-weight:700;color:#0C447C">${rcbCt.manN.toFixed(3)}</td>
-        <td style="text-align:center;padding:4px 6px;font-weight:600">${rcbCp.manN.toFixed(3)}</td></tr>
-      <tr style="background:var(--color-background-secondary)"><td style="padding:4px 6px;font-weight:600">Wetted perimeter / barrel</td>
-        <td style="text-align:center;padding:4px 6px;font-weight:700;color:#0C447C">${rcbCt.wettedPerim>0?rcbCt.wettedPerim.toFixed(2)+' ft':'—'}</td>
-        <td style="text-align:center;padding:4px 6px;font-weight:600">${rcbCp.wettedPerim>0?rcbCp.wettedPerim.toFixed(2)+' ft':'—'}</td></tr>
-      <tr><td style="padding:4px 6px;font-weight:600">Hydraulic radius (ft)</td>
-        <td style="text-align:center;padding:4px 6px;font-weight:700;color:#0C447C">${rcbCt.hydraulicRadius>0?rcbCt.hydraulicRadius.toFixed(3):'—'}</td>
-        <td style="text-align:center;padding:4px 6px;font-weight:600">${rcbCp.hydraulicRadius>0?rcbCp.hydraulicRadius.toFixed(3):'—'}</td></tr>
-      <tr style="background:var(--color-background-secondary)"><td style="padding:4px 6px;font-weight:600">Conveyance K (cfs)</td>
-        <td style="text-align:center;padding:4px 6px;font-weight:700;font-size:14px;color:#0C447C;background:#E6F1FB;border-radius:4px">${rcbCt.conveyance>0?rcbCt.conveyance.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1}):'—'}</td>
-        <td style="text-align:center;padding:4px 6px;font-weight:700;font-size:14px">${rcbCp.conveyance>0?rcbCp.conveyance.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1}):'—'}</td></tr>
-      ${(rcbCtFt>0||rcbCpFt>0)?`<tr style="border-top:1px solid var(--color-border-tertiary)"><td style="padding:5px 6px;font-size:10px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.3px">Project footage (LF)</td>
-        <td style="text-align:center;padding:5px 6px;font-weight:700;color:#0C447C">${rcbCtFt>0?rcbCtFt.toLocaleString()+' LF':'—'}</td>
-        <td style="text-align:center;padding:5px 6px;font-weight:700">${rcbCpFt>0?rcbCpFt.toLocaleString()+' LF':'—'}</td></tr>
-      <tr><td style="padding:5px 6px;font-weight:600">Total excavation</td>
-        <td style="text-align:center;padding:5px 6px;font-weight:700;font-size:14px;color:#0C447C;background:#E6F1FB;border-radius:4px">${fmtCY2(rcbCt.excav,rcbCtFt)}</td>
-        <td style="text-align:center;padding:5px 6px;font-weight:700;font-size:14px">${fmtCY2(rcbCp.excav,rcbCpFt)}</td></tr>
-      <tr style="background:var(--color-background-secondary)"><td style="padding:5px 6px;font-weight:600">Est. backfill required</td>
-        <td style="text-align:center;padding:5px 6px;font-weight:700;font-size:14px;color:#0C447C">${fmtBFCY2(rcbCt.excav,rcbCt.totalOpen,rcbCtFt)}</td>
-        <td style="text-align:center;padding:5px 6px;font-weight:700;font-size:14px">${fmtBFCY2(rcbCp.excav,rcbCp.totalOpen,rcbCpFt)}</td></tr>`:``}
+
+  // ── Per-line excavation & backfill aggregation ──────────────────────────
+  const sumLines=activeLines();
+  const ctLabelTEC=`Contech — ${S.product}`;
+  const cpLabelTEC=pbx?`${S.compName||'Competitor'} Precast Box`:`${S.compName||'Competitor'}`;
+  const fmtCY3=(v)=>v>0?v.toLocaleString('en-US',{maximumFractionDigits:1})+' CY':'—';
+  const fmtDol=(v)=>v>0?'$'+v.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}):'—';
+
+  let lineRows='';
+  let ctExcTot=0,cpExcTot=0,ctBfTot=0,cpBfTot=0;
+  sumLines.forEach(i=>{
+    const ctLFi=S.diam.ct[i]?.lf||0, cpLFi=S.diam.cp[i]?.lf||0;
+    const ctC=cmpTrenchLine(i), cpC=cpTrenchLine(i);
+    const ctExcCYi=ctLFi>0?ctC.excav*ctLFi/CY:0;
+    const cpExcCYi=cpLFi>0?cpC.excav*cpLFi/CY:0;
+    const ctBfCYi=ctLFi>0?Math.max(0,(ctC.excav-ctC.totalOpen)*ctLFi/CY):0;
+    const cpBfCYi=cpLFi>0?Math.max(0,(cpC.excav-cpC.totalOpen)*cpLFi/CY):0;
+    ctExcTot+=ctExcCYi; cpExcTot+=cpExcCYi;
+    ctBfTot+=ctBfCYi; cpBfTot+=cpBfCYi;
+    const ctDiam=S.diam.ct[i]?.d||'—';
+    const cpDiam=pbx?`${S.rcb.span||'—'}′×${S.rcb.rise||'—'}′`:(S.diam.cp[i]?.d||'—');
+    lineRows+=`<tr>
+      <td style="padding:4px 6px;font-size:10px;color:var(--color-text-secondary)">Line ${i+1}</td>
+      <td style="padding:4px 6px;font-size:10px;color:var(--color-text-secondary);text-align:center">${ctDiam}</td>
+      <td style="padding:4px 6px;font-weight:600;color:#0C447C;text-align:right;border-left:2px solid #c8d8ee">${fmtCY3(ctExcCYi)}</td>
+      <td style="padding:4px 6px;font-weight:600;color:#0C447C;text-align:right">${fmtCY3(ctBfCYi)}</td>
+      <td style="padding:4px 6px;font-size:10px;color:var(--color-text-secondary);text-align:center;border-left:2px solid var(--color-border-tertiary)">${cpDiam}</td>
+      <td style="padding:4px 6px;font-weight:600;text-align:right">${fmtCY3(cpExcCYi)}</td>
+      <td style="padding:4px 6px;font-weight:600;text-align:right">${fmtCY3(cpBfCYi)}</td>
+    </tr>`;
+  });
+
+  const ctExcCost=ctExcTot*(S.exc.ct||0);
+  const cpExcCost=cpExcTot*(S.exc.cp||0);
+  const ctBfCost=ctBfTot*(S.backfill.ctCost||0);
+  const cpBfCost=cpBfTot*(S.backfill.cpCost||0);
+  const ctTrenchTotal=ctExcCost+ctBfCost;
+  const cpTrenchTotal=cpExcCost+cpBfCost;
+  const trenchSavings=cpTrenchTotal-ctTrenchTotal;
+
+  const rcbSummaryBlock=sumLines.length===0?'':`<div class="rcb-card" style="margin-bottom:1rem">
+    <div class="sh"><div class="sn" style="background:#1a4a7a;font-size:8px;letter-spacing:-.5px">TEC</div><div><div class="st">Trench Excavation Summary</div><div class="ss">Excavation and backfill volumes by line item &mdash; contractor quantities &amp; cost</div></div></div>
+
+    <table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:12px">
+      <thead>
+        <tr style="border-bottom:1.5px solid var(--color-border-tertiary)">
+          <th colspan="2" style="padding:4px 6px;text-align:left;font-size:9px;font-weight:700;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.3px">Line</th>
+          <th colspan="2" style="padding:4px 6px;text-align:center;font-size:9px;font-weight:700;color:#0C3460;border-left:2px solid #c8d8ee">Contech &mdash; ${S.product}</th>
+          <th colspan="3" style="padding:4px 6px;text-align:center;font-size:9px;font-weight:700;color:var(--color-text-secondary);border-left:2px solid var(--color-border-tertiary)">${cpLabelTEC}</th>
+        </tr>
+        <tr style="border-bottom:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary)">
+          <th style="padding:3px 6px;text-align:left;font-size:9px;font-weight:600;color:var(--color-text-secondary)">#</th>
+          <th style="padding:3px 6px;text-align:center;font-size:9px;font-weight:600;color:var(--color-text-secondary)">Size</th>
+          <th style="padding:3px 6px;text-align:right;font-size:9px;font-weight:600;color:#0C3460;border-left:2px solid #c8d8ee">Excavation</th>
+          <th style="padding:3px 6px;text-align:right;font-size:9px;font-weight:600;color:#0C3460">Backfill</th>
+          <th style="padding:3px 6px;text-align:center;font-size:9px;font-weight:600;color:var(--color-text-secondary);border-left:2px solid var(--color-border-tertiary)">Size</th>
+          <th style="padding:3px 6px;text-align:right;font-size:9px;font-weight:600;color:var(--color-text-secondary)">Excavation</th>
+          <th style="padding:3px 6px;text-align:right;font-size:9px;font-weight:600;color:var(--color-text-secondary)">Backfill</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${lineRows}
+        <tr style="border-top:1.5px solid var(--color-border-secondary);background:var(--color-background-secondary)">
+          <td colspan="2" style="padding:5px 6px;font-weight:700;font-size:11px">TOTAL</td>
+          <td style="padding:5px 6px;font-weight:700;font-size:13px;color:#0C447C;text-align:right;border-left:2px solid #c8d8ee">${fmtCY3(ctExcTot)}</td>
+          <td style="padding:5px 6px;font-weight:700;font-size:13px;color:#0C447C;text-align:right">${fmtCY3(ctBfTot)}</td>
+          <td style="padding:5px 6px;text-align:center;border-left:2px solid var(--color-border-tertiary)"></td>
+          <td style="padding:5px 6px;font-weight:700;font-size:13px;text-align:right">${fmtCY3(cpExcTot)}</td>
+          <td style="padding:5px 6px;font-weight:700;font-size:13px;text-align:right">${fmtCY3(cpBfTot)}</td>
+        </tr>
+      </tbody>
     </table>
-    ${rcbDiff>0?`<div class="rcb-savings-row"><span class="rcb-savings-txt">Contech ${S.product} requires <strong style="font-weight:600">${rcbDiff.toFixed(1)} cu ft/LF less excavation</strong> — less spoil removal, faster trench work, and lower backfill volume</span><span class="rcb-savings-badge">-${rcbCp.excav>0?((rcbDiff/rcbCp.excav)*100).toFixed(0):0}% excavation</span></div>`:''}
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;font-size:11px">
-      <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:7px 9px;border:0.5px solid var(--color-border-tertiary)">
-        <div style="font-weight:600;color:#0C3460;margin-bottom:4px">Contech ${S.product} — install parameters</div>
-        <div style="color:var(--color-text-secondary)">Bedding: <strong style="color:var(--color-text-primary)">${S.rcb.cmpBedding||0} in</strong> &nbsp;·&nbsp; Cover: <strong style="color:var(--color-text-primary)">${S.rcb.cmpCover||0} ft</strong> &nbsp;·&nbsp; Working room: <strong style="color:var(--color-text-primary)">${S.rcb.cmpWorkRoom||0} in</strong></div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:${trenchSavings!==0?'10px':'0'}">
+      <div style="background:#E6F1FB;border-radius:var(--border-radius-md);padding:12px;border:0.5px solid #B5D4F4">
+        <div style="font-size:10px;font-weight:700;color:#0C3460;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Contech &mdash; ${S.product}</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;padding-bottom:6px;border-bottom:0.5px solid #B5D4F4">
+          <div><div style="font-size:11px;font-weight:600;color:#185FA5">Excavation</div>
+          <div style="font-size:10px;color:#185FA5;margin-top:1px">${fmtCY3(ctExcTot)} @ \$${(S.exc.ct||0).toFixed(2)}/CY</div></div>
+          <div style="font-size:16px;font-weight:700;color:#0C447C">${fmtDol(ctExcCost)}</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
+          <div><div style="font-size:11px;font-weight:600;color:#185FA5">Backfill</div>
+          <div style="font-size:10px;color:#185FA5;margin-top:1px">${fmtCY3(ctBfTot)} @ \$${(S.backfill.ctCost||0).toFixed(2)}/CY</div></div>
+          <div style="font-size:16px;font-weight:700;color:#0C447C">${fmtDol(ctBfCost)}</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid #B5D4F4">
+          <div style="font-size:11px;font-weight:700;color:#0C3460">Excavation &amp; Backfill Total</div>
+          <div style="font-size:18px;font-weight:700;color:#0C3460">${fmtDol(ctTrenchTotal)}</div>
+        </div>
       </div>
-      <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:7px 9px;border:0.5px solid var(--color-border-tertiary)">
-        <div style="font-weight:600;color:var(--color-text-primary);margin-bottom:4px">${pbx?'Precast box':S.compName||'Competitor'} — install parameters</div>
-        <div style="color:var(--color-text-secondary)">Bedding: <strong style="color:var(--color-text-primary)">${pbx?S.rcb.bedding:S.rcb.cpBedding||0} in</strong> &nbsp;·&nbsp; Cover: <strong style="color:var(--color-text-primary)">${pbx?S.rcb.rcbCover:S.rcb.cpCover||0} ft</strong> &nbsp;·&nbsp; Working room: <strong style="color:var(--color-text-primary)">${pbx?S.rcb.workRoom:S.rcb.cpWorkRoom||0} in</strong></div>
+      <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:12px;border:0.5px solid var(--color-border-secondary)">
+        <div style="font-size:10px;font-weight:700;color:var(--color-text-primary);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">${cpLabelTEC}</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;padding-bottom:6px;border-bottom:0.5px solid var(--color-border-tertiary)">
+          <div><div style="font-size:11px;font-weight:600;color:var(--color-text-secondary)">Excavation</div>
+          <div style="font-size:10px;color:var(--color-text-secondary);margin-top:1px">${fmtCY3(cpExcTot)} @ \$${(S.exc.cp||0).toFixed(2)}/CY</div></div>
+          <div style="font-size:16px;font-weight:700;color:var(--color-text-primary)">${fmtDol(cpExcCost)}</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
+          <div><div style="font-size:11px;font-weight:600;color:var(--color-text-secondary)">Backfill</div>
+          <div style="font-size:10px;color:var(--color-text-secondary);margin-top:1px">${fmtCY3(cpBfTot)} @ \$${(S.backfill.cpCost||0).toFixed(2)}/CY</div></div>
+          <div style="font-size:16px;font-weight:700;color:var(--color-text-primary)">${fmtDol(cpBfCost)}</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid var(--color-border-tertiary)">
+          <div style="font-size:11px;font-weight:700;color:var(--color-text-primary)">Excavation &amp; Backfill Total</div>
+          <div style="font-size:18px;font-weight:700;color:var(--color-text-primary)">${fmtDol(cpTrenchTotal)}</div>
+        </div>
       </div>
     </div>
-  </div>`;
 
+    ${trenchSavings>0?`<div class="rcb-savings-row"><span class="rcb-savings-txt">Contech ${S.product} saves <strong style="font-weight:600">${fmtDol(trenchSavings)}</strong> on excavation &amp; backfill</span><span class="rcb-savings-badge">$${Math.round(trenchSavings/1000)}K savings</span></div>`:trenchSavings<0?`<div class="rcb-savings-row" style="background:var(--color-background-secondary);border-color:var(--color-border-tertiary)"><span class="rcb-savings-txt">${cpLabelTEC} is ${fmtDol(-trenchSavings)} lower on excavation &amp; backfill</span><span class="rcb-savings-badge" style="background:#555">Competitor advantage</span></div>`:''}
+
+    <div class="info" style="margin-top:8px">Volumes from trench geometry &times; Section 3 linear footage per line. Costs = CY &times; $/CY from Sections 4 &amp; 5.</div>
+  </div>`;
   const carbonBlock=`<div class="carbon-block">
     <div class="carbon-title-row"><div class="carbon-leaf"></div><div class="carbon-title">Relative carbon footprint — cradle to gate</div></div>
     <div class="carbon-grid">
@@ -1930,6 +2266,7 @@ function reset(){
   S={product:null,compName:'',compProduct:'',appType:'',projType:'',projName:'',geo:null,installChip:null,
     diam:{ct:newDiamRows(),cp:newDiamRows()},
     exc:{ct:0,cp:0},inst:{ct:0,cp:0},instRateCt:0,instRateCp:0,dailyRate:0,
+  rcbLines:Array.from({length:15},()=>({cmpBarrels:1,cmpSpacing:0,cmpBedding:12,cmpWorkRoom:18,cmpCover:0,ctManning:0,cpBarrels:1,cpSpacing:0,cpBedding:12,cpWorkRoom:18,cpCover:0,cpManning:0,runs:1,runSpacing:0,bedding:12,workRoom:18,rcbCover:0,span:0,rise:0,wall:6,topSlab:6,botSlab:6,haunch:12,collapsed:true})),
     backfill:{ctType:'',ctCost:0,ctRebar:false,ctRebarCost:REBAR_SUGGESTED_COST,cpType:'',cpCost:0,cpRebar:false,cpRebarCost:REBAR_SUGGESTED_COST},
     jb:{ctUnit:0,ctQty:0,pcUnit:0,pcQty:0},
     fit:{ct:newFit(),cp:newFit()},
