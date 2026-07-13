@@ -116,7 +116,7 @@ select.err,input.err{border-color:#E24B4A}
 .sum-row{display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;font-size:12px}
 .sum-lbl{color:var(--color-text-secondary)}
 .sum-val{font-weight:600;color:var(--color-text-primary)}
-.sum-total{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0 0;margin-top:4px;border-top:0.5px solid rgba(0,0,0,.1);font-size:14px;font-weight:600}
+.sum-total{display:flex;justify-content:space-between;align-items:baseline;padding:8px 0 0;margin-top:6px;border-top:1.5px solid rgba(0,0,0,.15);font-size:15px;font-weight:700}
 .win-val{color:#0C447C}
 .lose-val{color:#A32D2D}
 .winner-banner{border-radius:var(--border-radius-md);padding:10px 14px;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -1997,11 +1997,48 @@ function calculate(){
   else if(diff>0)banner=`<div class="winner-banner wbn-cp"><div><div class="winner-txt">${cpLabel} is priced lower</div><div class="winner-sub">Contech ${S.product} is \$${diff.toFixed(2)}/LF higher (blended average)</div></div></div>`;
   else banner=`<div class="winner-banner wbn-eq"><div class="winner-txt">Products are equal in total installed cost</div></div>`;
 
-  const statGrid=`<div class="stat-grid">
-    <div class="stat${ctW?' hi':''}"><div class="stat-lbl">Contech ${S.product}</div><div class="stat-val">\$${ct.toFixed(2)}</div><div class="stat-unit">blended $/LF</div></div>
-    <div class="stat${!ctW?' hi':''}"><div class="stat-lbl">${S.compName} ${S.compProduct}</div><div class="stat-val">\$${cp.toFixed(2)}</div><div class="stat-unit">blended $/LF</div></div>
-    <div class="stat${ctDays&&ctW?' hi':''}"><div class="stat-lbl">Contech install time</div><div class="stat-val">${ctDays||'—'}</div><div class="stat-unit">${ctDays?'working days':'enter rate & LF'}</div></div>
-    <div class="stat${cpDays&&!ctW?' hi':''}"><div class="stat-lbl">Competitor install time</div><div class="stat-val">${cpDays||'—'}</div><div class="stat-unit">${cpDays?'working days':'enter rate & LF'}</div></div>
+  const pctSavings=cp>0&&ct<cp?((cp-ct)/cp*100).toFixed(1):null;
+  const dolSavings=cpProjTotal>ctProjTotal&&ctLF>0?cpProjTotal-ctProjTotal:null;
+  const statGrid=`<div style="margin-bottom:1rem">
+    <!-- Impact header -->
+    ${ctW&&dolSavings?`<div style="background:linear-gradient(135deg,#0C3460,#1a5a9a);border-radius:var(--border-radius-md);padding:14px 18px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:#90c8f0;text-transform:uppercase;letter-spacing:.6px;margin-bottom:3px">Contech ${S.product} — Lower Total Installed Cost</div>
+        <div style="font-size:28px;font-weight:800;color:#fff;line-height:1">$${dolSavings.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})} savings</div>
+        <div style="font-size:12px;color:#90c8f0;margin-top:3px">${pctSavings}% lower total project cost vs. ${S.compName||'competitor'} ${S.compProduct}</div>
+      </div>
+      <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:10px 16px;text-align:center">
+        <div style="font-size:11px;color:#90c8f0;margin-bottom:2px">Contech advantage</div>
+        <div style="font-size:22px;font-weight:800;color:#fff">✓ Recommended</div>
+      </div>
+    </div>`:''}
+    <!-- Stat cards -->
+    <div class="stat-grid">
+      <div style="background:${ctW?'#1a4a7a':'var(--color-background-secondary)'};border-radius:var(--border-radius-md);padding:14px 16px;border:${ctW?'none':'0.5px solid var(--color-border-tertiary)'};position:relative;overflow:hidden">
+        ${ctW?`<div style="position:absolute;top:0;right:0;background:#4a9fdc;color:#fff;font-size:8px;font-weight:700;padding:3px 8px;border-radius:0 var(--border-radius-md) 0 6px;text-transform:uppercase;letter-spacing:.4px">Lower cost</div>`:''}
+        <div style="font-size:10px;font-weight:600;color:${ctW?'#90c8f0':'var(--color-text-secondary)'};margin-bottom:4px">Contech ${S.product}</div>
+        <div style="font-size:34px;font-weight:800;color:${ctW?'#fff':'var(--color-text-primary)'};line-height:1">$${ct.toFixed(2)}</div>
+        <div style="font-size:11px;color:${ctW?'#B5D4F4':'var(--color-text-secondary)'};margin-top:3px">blended $/LF</div>
+      </div>
+      <div style="background:${!ctW?'#1a4a7a':'var(--color-background-secondary)'};border-radius:var(--border-radius-md);padding:14px 16px;border:${!ctW?'none':'0.5px solid var(--color-border-tertiary)'};position:relative;overflow:hidden">
+        ${!ctW?`<div style="position:absolute;top:0;right:0;background:#4a9fdc;color:#fff;font-size:8px;font-weight:700;padding:3px 8px;border-radius:0 var(--border-radius-md) 0 6px;text-transform:uppercase;letter-spacing:.4px">Lower cost</div>`:''}
+        <div style="font-size:10px;font-weight:600;color:${!ctW?'#90c8f0':'var(--color-text-secondary)'};margin-bottom:4px">${S.compName||'Competitor'} ${S.compProduct}</div>
+        <div style="font-size:34px;font-weight:800;color:${!ctW?'#fff':'var(--color-text-primary)'};line-height:1">$${cp.toFixed(2)}</div>
+        <div style="font-size:11px;color:${!ctW?'#B5D4F4':'var(--color-text-secondary)'};margin-top:3px">blended $/LF</div>
+      </div>
+      <div style="background:${ctDays&&ctDays<(cpDays||999)?'#0d3d26':'var(--color-background-secondary)'};border-radius:var(--border-radius-md);padding:14px 16px;border:${ctDays&&ctDays<(cpDays||999)?'none':'0.5px solid var(--color-border-tertiary)'};position:relative;overflow:hidden">
+        ${ctDays&&ctDays<(cpDays||999)?`<div style="position:absolute;top:0;right:0;background:#2e9e5b;color:#fff;font-size:8px;font-weight:700;padding:3px 8px;border-radius:0 var(--border-radius-md) 0 6px;text-transform:uppercase;letter-spacing:.4px">Faster</div>`:''}
+        <div style="font-size:10px;font-weight:600;color:${ctDays&&ctDays<(cpDays||999)?'#86efac':'var(--color-text-secondary)'};margin-bottom:4px">Contech install time</div>
+        <div style="font-size:34px;font-weight:800;color:${ctDays&&ctDays<(cpDays||999)?'#fff':'var(--color-text-primary)'};line-height:1">${ctDays||'—'}</div>
+        <div style="font-size:11px;color:${ctDays&&ctDays<(cpDays||999)?'#86efac':'var(--color-text-secondary)'};margin-top:3px">${ctDays?'working days':'enter rate & LF'}</div>
+      </div>
+      <div style="background:${cpDays&&cpDays<(ctDays||999)?'#0d3d26':'var(--color-background-secondary)'};border-radius:var(--border-radius-md);padding:14px 16px;border:${cpDays&&cpDays<(ctDays||999)?'none':'0.5px solid var(--color-border-tertiary)'};position:relative;overflow:hidden">
+        ${cpDays&&cpDays<(ctDays||999)?`<div style="position:absolute;top:0;right:0;background:#2e9e5b;color:#fff;font-size:8px;font-weight:700;padding:3px 8px;border-radius:0 var(--border-radius-md) 0 6px;text-transform:uppercase;letter-spacing:.4px">Faster</div>`:''}
+        <div style="font-size:10px;font-weight:600;color:${cpDays&&cpDays<(ctDays||999)?'#86efac':'var(--color-text-secondary)'};margin-bottom:4px">Competitor install time</div>
+        <div style="font-size:34px;font-weight:800;color:${cpDays&&cpDays<(ctDays||999)?'#fff':'var(--color-text-primary)'};line-height:1">${cpDays||'—'}</div>
+        <div style="font-size:11px;color:${cpDays&&cpDays<(ctDays||999)?'#86efac':'var(--color-text-secondary)'};margin-top:3px">${cpDays?'working days':'enter rate & LF'}</div>
+      </div>
+    </div>
   </div>`;
 
   const schedNote=(()=>{
@@ -2046,7 +2083,10 @@ function calculate(){
     return `<div style="margin-bottom:12px"><div class="diam-section-lbl"><span class="col-badge ${badgeClass}" style="margin-right:6px">${badgeText}</span>${name} — cost by diameter</div>
       <table class="diam-tbl"><tr><th>Diameter</th><th>$/LF (mat.)</th><th>LF</th><th>Material total</th></tr>${body}</table></div>`;
   }
-  const diamSection=diamTableHtmlInline(ctDiamRows,S.product,'badge-ct','Contech')+diamTableHtmlInline(cpDiamRows,cpLabel,'badge-cp','Competitor');
+  const diamSection=`<div class="rcb-card" style="margin-bottom:1rem">
+    <div class="sh"><div class="sn" style="background:#2c5f9e;font-size:8px;letter-spacing:-.5px">MCD</div><div><div class="st">Material Cost by Diameter / Type</div><div class="ss">Delivered material cost per line item — $/LF and total footage by product</div></div></div>
+    ${diamTableHtmlInline(ctDiamRows,S.product,'badge-ct','Contech')}${diamTableHtmlInline(cpDiamRows,cpLabel,'badge-cp','Competitor')}
+  </div>`;
 
   const {ctCalc:rcbCt,cpCalc:rcbCp}=trenchCalcs();
   const CY=27;
@@ -2186,8 +2226,12 @@ function calculate(){
     </div>
   </div>`;
 
-  const sumGrid=`<div class="summary-grid">
-    <div class="sum-col ct-col"><div class="sum-col-name" style="color:#0C447C">Contech — ${S.product}</div>
+  const sumGrid=`<div class="summary-grid" style="margin-bottom:1rem">
+    <div class="sum-col ct-col" style="${ctW?'border:2px solid #1a4a7a;box-shadow:0 2px 12px rgba(26,74,122,.15)':''}">
+      <div class="sum-col-name" style="color:#0C447C;display:flex;align-items:center;justify-content:space-between">
+        <span>Contech — ${S.product}</span>
+        ${ctW?`<span style="background:#1a4a7a;color:#fff;font-size:9px;font-weight:700;padding:3px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.4px">✓ Lower Cost</span>`:''}
+      </div>
       <div class="sum-row"><span class="sum-lbl">Material total</span><span class="sum-val">\$${ctMatTotal.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>
       <div class="sum-row"><span class="sum-lbl">Excavation & trenching</span><span class="sum-val">${ctExcCY>0?ctExcCY.toLocaleString('en-US',{maximumFractionDigits:1})+' CY @ $'+S.exc.ct.toFixed(2)+'/CY':'—'}</span></div>
       <div class="sum-row"><span class="sum-lbl" style="padding-left:6px">Excavation total</span><span class="sum-val">\$${ctExcTotal.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>
@@ -2197,7 +2241,8 @@ function calculate(){
       ${ctJbT>0?`<div class="sum-row"><span class="sum-lbl">Structures & fittings</span><span class="sum-val">\$${ctJbT.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>`:''}
       <div class="sum-row"><span class="sum-lbl">Total project length</span><span class="sum-val">${ctLF.toLocaleString()} LF</span></div>
       ${ctDays?`<div class="sum-row"><span class="sum-lbl">Est. install time</span><span class="sum-val${ctW?' win-val':''}">${ctDays} days @ ${S.instRateCt} LF/day</span></div>`:''}
-      <div class="sum-total"><span>Total project cost</span><span class="${ctW?'win-val':''}">\$${ctProjTotal.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div></div>
+      <div class="sum-total"><span>Total project cost</span><span class="${ctW?'win-val':''}" style="font-size:20px;font-weight:800">\$${ctProjTotal.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:5px;margin-top:2px;font-size:11px;color:var(--color-text-secondary)"><span>Blended cost per linear foot</span><span style="font-weight:700;color:${ctW?'#0C447C':'var(--color-text-primary)'}">$${ct.toFixed(2)}/LF</span></div></div>
     <div class="sum-col cp-col"><div class="sum-col-name">${cpLabel}</div>
       <div class="sum-row"><span class="sum-lbl">Material total</span><span class="sum-val">\$${cpMatTotal.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>
       <div class="sum-row"><span class="sum-lbl">Excavation & trenching</span><span class="sum-val">${cpExcCY>0?cpExcCY.toLocaleString('en-US',{maximumFractionDigits:1})+' CY @ $'+S.exc.cp.toFixed(2)+'/CY':'—'}</span></div>
@@ -2208,7 +2253,8 @@ function calculate(){
       ${pcJbT>0?`<div class="sum-row"><span class="sum-lbl">Structures & fittings</span><span class="sum-val">\$${pcJbT.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>`:''}
       <div class="sum-row"><span class="sum-lbl">Total project length</span><span class="sum-val">${cpLF.toLocaleString()} LF</span></div>
       ${cpDays?`<div class="sum-row"><span class="sum-lbl">Est. install time</span><span class="sum-val${!ctW?' win-val':''}">${cpDays} days @ ${S.instRateCp} LF/day</span></div>`:''}
-      <div class="sum-total"><span>Total project cost</span><span class="${!ctW?'win-val':''}">\$${cpProjTotal.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div></div>
+      <div class="sum-total"><span>Total project cost</span><span class="${!ctW?'win-val':''}" style="font-size:20px;font-weight:800">\$${cpProjTotal.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:5px;margin-top:2px;font-size:11px;color:var(--color-text-secondary)"><span>Blended cost per linear foot</span><span style="font-weight:700;color:${!ctW?'#0C447C':'var(--color-text-primary)'}">$${cp.toFixed(2)}/LF</span></div></div>
   </div>`;
 
   const bars=`<div class="bars">
@@ -2244,7 +2290,7 @@ function calculate(){
   document.getElementById('v-results').innerHTML=`<div class="card">
     <div class="sh"><div class="sn"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
     <div><div class="st">Cost comparison summary${S.projName?` — ${S.projName}`:''}</div><div class="ss">${S.appType} · ${S.projType}</div></div></div>
-    ${banner}${projT2}${diamSection}${rcbSummaryBlock}${statGrid}${schedNote}${jbBlock2}${sumGrid}${bars}${carbonBlock}${details}
+    ${banner}${statGrid}${schedNote}${sumGrid}${diamSection}${rcbSummaryBlock}${jbBlock2}${carbonBlock}${details}
     <div class="action-row">
       <button class="btn-pdf" onclick="printSummary()">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="1" width="10" height="12" rx="1.5" stroke="#fff" stroke-width="1.2"/><path d="M4 5h6M4 7.5h6M4 10h4" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/></svg>
