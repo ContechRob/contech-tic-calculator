@@ -400,7 +400,7 @@ function newDiamRows(){return Array.from({length:15},()=>({d:'',c:0,lf:0}));}
 
 let S={product:null,compName:'',compProduct:'',appType:'',projType:'',projName:'',projCity:'',projState:'',geo:null,installChip:null,
   diam:{ct:newDiamRows(),cp:newDiamRows()},
-  exc:{ct:0,cp:0},inst:{ct:0,cp:0},instRateCt:0,instRateCp:0,dailyRate:0,
+  exc:{ct:0,cp:0},inst:{ct:0,cp:0},instRateCt:0,instRateCp:0,dailyRate:0,spoils:{swell:25,truckCY:14,haulPerLoad:0,mode:'load',haulPerCY:0},
   visibleDiamLines:1,
     rcbLines:Array.from({length:15},()=>({cmpBarrels:1,cmpSpacing:0,cmpBedding:null,cmpWorkRoom:18,cmpCover:null,ctManning:0,cpBarrels:1,cpSpacing:0,cpBedding:null,cpWorkRoom:18,cpCover:null,cpManning:0,runs:1,runSpacing:0,bedding:12,workRoom:18,rcbCover:0,span:0,rise:0,wall:6,topSlab:6,botSlab:6,haunch:12,collapsed:true})),
   backfill:{ctType:'',ctCost:0,ctRebar:false,ctRebarCost:REBAR_SUGGESTED_COST,cpType:'',cpCost:0,cpRebar:false,cpRebarCost:REBAR_SUGGESTED_COST},
@@ -849,6 +849,22 @@ function backfillTotal(side){
   const materialCost=(rate||0)*cy;
   const rebarLumpSum=(type==='rcc'&&rebar)?(rebarCost||0)*totalLF(side):0;
   return materialCost+rebarLumpSum;
+}
+// ── Spoils & haul-off ──
+// Native backfill: excavated soil returns to trench → spoils = displaced (pipe/box + imported bedding) volume.
+// Imported backfill types: embedment must be select material → all excavated soil is hauled off.
+function spoilsBankCY(side){
+  const exc=excavationCY(side);if(exc<=0)return 0;
+  const type=side==='ct'?S.backfill.ctType:S.backfill.cpType;
+  if(type==='native')return Math.max(0,exc-backfillCY(side));
+  return exc;
+}
+function spoilsLooseCY(side){return spoilsBankCY(side)*(1+((+S.spoils.swell||0)/100));}
+function spoilsLoads(side){const t=+S.spoils.truckCY||14;const l=spoilsLooseCY(side);return l>0?Math.ceil(l/t):0;}
+function spoilsMode(){return S.spoils.mode==='cy'?'cy':'load';}
+function spoilsCost(side){
+  if(spoilsMode()==='cy')return spoilsLooseCY(side)*(+S.spoils.haulPerCY||0);
+  return spoilsLoads(side)*(+S.spoils.haulPerLoad||0);
 }
 function totalLF(side){return S.diam[side].reduce((s,r)=>s+(r.lf||0),0);}
 function materialTotal(side){return S.diam[side].reduce((s,r)=>s+(r.c||0)*(r.lf||0),0);}
@@ -1521,6 +1537,40 @@ function updateRcbLineResults(i){
   }
 }
 
+function spoilsPrevHtml(side){
+  const bank=spoilsBankCY(side);
+  if(bank<=0)return '<span style="color:var(--color-text-secondary)">—</span>';
+  const loose=spoilsLooseCY(side),cost=spoilsCost(side);
+  if(spoilsMode()==='cy'){
+    return `<strong>${bank.toLocaleString('en-US',{maximumFractionDigits:0})} CY</strong> bank &rarr; ${loose.toLocaleString('en-US',{maximumFractionDigits:0})} CY loose${cost>0?` &rarr; <strong>$${cost.toLocaleString('en-US',{maximumFractionDigits:0})}</strong>`:''}`;
+  }
+  const loads=spoilsLoads(side);
+  return `<strong>${bank.toLocaleString('en-US',{maximumFractionDigits:0})} CY</strong> bank &rarr; ${loose.toLocaleString('en-US',{maximumFractionDigits:0})} CY loose &rarr; <strong>${loads.toLocaleString()} loads</strong>${cost>0?` &rarr; <strong>$${cost.toLocaleString('en-US',{maximumFractionDigits:0})}</strong>`:''}`;
+}
+function updateSpoilsPrev(){
+  const a=document.getElementById('spoils-prev-ct');if(a)a.innerHTML=spoilsPrevHtml('ct');
+  const b=document.getElementById('spoils-prev-cp');if(b)b.innerHTML=spoilsPrevHtml('cp');
+}
+function spoilsBlockHtml(){
+  return `<div class="divider"></div>
+  <div class="sh" style="margin-bottom:10px"><div style="width:18px;height:18px;border-radius:50%;background:#1a4a7a;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;flex-shrink:0">&#9650;</div><div><div class="st" style="font-size:12px">Spoils & haul-off <span style="font-weight:400;color:var(--color-text-secondary)">(optional)</span></div><div class="ss">Excess excavated material hauled off site — native backfill returns soil to the trench; imported backfill hauls it all</div></div></div>
+  <div style="display:flex;gap:0;margin-bottom:10px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);overflow:hidden;width:fit-content">
+    <button onclick="S.spoils.mode='load';rCosts()" style="padding:6px 16px;font-size:11px;font-weight:600;border:none;cursor:pointer;background:${spoilsMode()==='load'?'#1a4a7a':'var(--color-background-secondary)'};color:${spoilsMode()==='load'?'#fff':'var(--color-text-secondary)'}">Price by truckload</button>
+    <button onclick="S.spoils.mode='cy';rCosts()" style="padding:6px 16px;font-size:11px;font-weight:600;border:none;border-left:0.5px solid var(--color-border-secondary);cursor:pointer;background:${spoilsMode()==='cy'?'#1a4a7a':'var(--color-background-secondary)'};color:${spoilsMode()==='cy'?'#fff':'var(--color-text-secondary)'}">Price by cubic yard</button>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+    <div><div class="lbl">Swell factor (%)</div><input type="number" min="0" max="60" step="1" value="${S.spoils.swell}" oninput="S.spoils.swell=+this.value||0;updateSpoilsPrev()"><div style="font-size:9px;color:var(--color-text-secondary);margin-top:2px">Sand ~15 · earth ~25 · clay ~35 — loose CY = bank &times; (1 + %)</div></div>
+    ${spoilsMode()==='load'?`
+    <div><div class="lbl">Truck capacity (loose CY)</div><input type="number" min="1" step="1" value="${S.spoils.truckCY}" oninput="S.spoils.truckCY=+this.value||0;updateSpoilsPrev()"><div style="font-size:9px;color:var(--color-text-secondary);margin-top:2px">Tandem 10–12 · tri-axle 14–16</div></div>
+    <div><div class="lbl">Haul + disposal ($/load)</div><input type="number" min="0" step="5" placeholder="0" value="${S.spoils.haulPerLoad||''}" oninput="S.spoils.haulPerLoad=+this.value||0;updateSpoilsPrev()"><div style="font-size:9px;color:var(--color-text-secondary);margin-top:2px">Cost = loads &times; $/load</div></div>`:`
+    <div><div class="lbl">Haul + disposal ($/CY, loose)</div><input type="number" min="0" step="0.25" placeholder="0.00" value="${S.spoils.haulPerCY||''}" oninput="S.spoils.haulPerCY=+this.value||0;updateSpoilsPrev()"><div style="font-size:9px;color:var(--color-text-secondary);margin-top:2px">Cost = loose CY (after swell) &times; $/CY</div></div>
+    <div style="display:flex;align-items:center;font-size:10px;color:var(--color-text-secondary);padding-top:14px">Priced on swelled (loose) volume &mdash; the material as hauled, not in-ground.</div>`}
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px">
+    <div class="inp-ct" style="border-radius:var(--border-radius-md);padding:7px 10px;background:#EBF4FD;border:0.5px solid #7CB9E8"><span style="font-size:9px;font-weight:700;color:#0C3460;text-transform:uppercase;letter-spacing:.3px">Contech spoils&nbsp;</span><span id="spoils-prev-ct">${spoilsPrevHtml('ct')}</span></div>
+    <div class="inp-cp" style="border-radius:var(--border-radius-md);padding:7px 10px;background:#FFFCE6;border:0.5px solid #D4B94A"><span style="font-size:9px;font-weight:700;color:#7a6800;text-transform:uppercase;letter-spacing:.3px">Competitor spoils&nbsp;</span><span id="spoils-prev-cp">${spoilsPrevHtml('cp')}</span></div>
+  </div>`;
+}
 function rCosts(){
   const ct=S.product;const cpFull=`${S.compName||'Competitor'} — ${S.compProduct||'product'}`;
   const rcbCard=rcbLinesHtml();
@@ -1551,7 +1601,7 @@ function rCosts(){
         <div class="backfill-subtotal" id="excsub-ct" style="margin-top:8px">${(()=>{const cy=excavationCY('ct'),tot=excavationTotal('ct'),rate=S.exc.ct;return cy>0?`Volume: <strong>${cy.toLocaleString('en-US',{maximumFractionDigits:1})} CY</strong> &nbsp;·&nbsp; Total: <strong>$${tot.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</strong>`:rate>0?'<span style="color:#A32D2D;font-size:10px">Enter pipe dimensions in trench comparison to calculate volume</span>':'Enter rate above — volume from trench comparison';})()}</div></div>
       <div class="inp-cp"><div class="col-hdr"><span class="col-badge badge-cp">Competitor</span><span class="col-title">${cpFull}</span></div><div class="lbl">Rate ($/CY)</div><input type="number" id="exc-cp" placeholder="0.00" min="0" step="0.01" value="${S.exc.cp||''}" oninput="S.exc.cp=+this.value||0;updateExcSub()">
         <div class="backfill-subtotal" id="excsub-cp" style="margin-top:8px">${(()=>{const cy=excavationCY('cp'),tot=excavationTotal('cp'),rate=S.exc.cp;return cy>0?`Volume: <strong>${cy.toLocaleString('en-US',{maximumFractionDigits:1})} CY</strong> &nbsp;·&nbsp; Total: <strong>$${tot.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</strong>`:rate>0?'<span style="color:#A32D2D;font-size:10px">Enter pipe dimensions in trench comparison to calculate volume</span>':'Enter rate above — volume from trench comparison';})()}</div></div>
-    </div>${geoHtml()}</div>`;
+    </div>${geoHtml()}${spoilsBlockHtml()}</div>`;
 
   const bfCard=`<div class="card ac" style="margin-bottom:.75rem">
     <div class="sh"><div class="sn">5</div><div><div class="st">Backfill type & cost</div><div class="ss">Select backfill material and enter $/LF separately for each product</div></div></div>
@@ -2122,8 +2172,10 @@ function showInternalCompare(){
   const cpDays=S.instRateCp>0&&cpLF>0?Math.ceil(cpLF/S.instRateCp):null;
   const ctOH=ctDays?ctDays*(S.dailyRate||0):0;
   const cpOH=cpDays?cpDays*(S.dailyRate||0):0;
-  const ctTotal=ctMat+ctExc+ctBf+ctFit+ctOH;
-  const cpTotal=cpMat+cpExc+cpBf+cpFit+cpOH;
+  const ctSp=spoilsBankCY('ct'),cpSp=spoilsBankCY('cp');
+  const ctSpC=spoilsCost('ct'),cpSpC=spoilsCost('cp');
+  const ctTotal=ctMat+ctExc+ctBf+ctFit+ctOH+ctSpC;
+  const cpTotal=cpMat+cpExc+cpBf+cpFit+cpOH+cpSpC;
   let ctK=0,cpK=0;
   activeLines().forEach(i=>{ctK+=cmpTrenchLine(i).conveyance;cpK+=cpTrenchLine(i).conveyance;});
   const $=v=>'$'+Math.round(v).toLocaleString();
@@ -2150,6 +2202,8 @@ function showInternalCompare(){
       why:fast?'Faster install = '+$((cpDays-ctDays)*(S.dailyRate||0))+' less contractor overhead, earlier road opening, less traffic control exposure.':'They install faster as entered — challenge the LF/day assumption or highlight crew familiarity.'};
     (fast?ctFav:cpFav).push(row);
   }
+  judge('Spoils to haul off (bank)',ctSp,cpSp,cy,'Less excess material — fewer truck cycles through the work zone and lower disposal exposure.','They generate less spoil — verify backfill type and trench geometry.',true);
+  judge('Spoils haul-off cost',ctSpC,cpSpC,$,'Direct trucking & disposal saving at the entered $/load.','Their haul-off line is cheaper as entered.',true);
   judge('Contractor overhead',ctOH,cpOH,$,'Schedule advantage converted to dollars at the daily rate.','Their shorter schedule cuts overhead — verify production rates.',true);
   judge('Hydraulic conveyance (full-flow K)',ctK,cpK,v=>Math.round(v).toLocaleString()+' cfs','More capacity per the entered geometry and Manning\u2019s n — performance story on top of cost.','Their section carries more flow — lead with installed cost and schedule instead.',false);
   judge('TOTAL INSTALLED COST',ctTotal,cpTotal,$,'The bottom line: full project cost favors Contech.','Their total is lower as entered — revisit assumptions or focus on schedule, hydraulics, and risk.',true);
@@ -2203,8 +2257,13 @@ function calculate(){
   const schedVal=dayDiff!==null&&S.dailyRate>0?dayDiff*S.dailyRate:null;
   const ctOverhead=ctDays!==null&&S.dailyRate>0?ctDays*S.dailyRate:0;
   const cpOverhead=cpDays!==null&&S.dailyRate>0?cpDays*S.dailyRate:0;
-  const ctProjTotal=ctMatTotal+bfCt+ctExcTotal+ctJbT+ctOverhead;
-  const cpProjTotal=cpMatTotal+bfCp+cpExcTotal+pcJbT+cpOverhead;
+  const ctSpoilsCost=spoilsCost('ct'), cpSpoilsCost=spoilsCost('cp');
+  const ctSpoilsLoads=spoilsLoads('ct'), cpSpoilsLoads=spoilsLoads('cp');
+  const spoilsDesc=(side)=>spoilsMode()==='cy'
+    ?`${spoilsLooseCY(side).toLocaleString('en-US',{maximumFractionDigits:0})} loose CY @ $${(+S.spoils.haulPerCY||0).toFixed(2)}/CY`
+    :`${spoilsLoads(side).toLocaleString()} loads @ $${(+S.spoils.haulPerLoad||0).toLocaleString()}/load`;
+  const ctProjTotal=ctMatTotal+bfCt+ctExcTotal+ctJbT+ctOverhead+ctSpoilsCost;
+  const cpProjTotal=cpMatTotal+bfCp+cpExcTotal+pcJbT+cpOverhead+cpSpoilsCost;
   const ct=ctLF>0?ctProjTotal/ctLF:0;
   const cp=cpLF>0?cpProjTotal/cpLF:0;
   const ctW=ct<=cp;const diff=Math.abs(ct-cp);const pct=cp>0?((diff/cp)*100).toFixed(1):0;const maxV=Math.max(ct,cp)||1;
@@ -2500,8 +2559,9 @@ function calculate(){
   const cpExcCost=cpExcTot*(S.exc.cp||0);
   const ctBfCost=ctBfTot*(S.backfill.ctCost||0);
   const cpBfCost=cpBfTot*(S.backfill.cpCost||0);
-  const ctTrenchTotal=ctExcCost+ctBfCost;
-  const cpTrenchTotal=cpExcCost+cpBfCost;
+  const ctHaul=spoilsCost('ct'), cpHaul=spoilsCost('cp');
+  const ctTrenchTotal=ctExcCost+ctBfCost+ctHaul;
+  const cpTrenchTotal=cpExcCost+cpBfCost+cpHaul;
   const trenchSavings=cpTrenchTotal-ctTrenchTotal;
 
   const rcbSummaryBlock=sumLines.length===0?'':`<div class="rcb-card" style="margin-bottom:1rem">
@@ -2537,6 +2597,10 @@ function calculate(){
       </tbody>
     </table>
 
+    ${(spoilsBankCY('ct')>0||spoilsBankCY('cp')>0)?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px;font-size:11px">
+      <div style="background:#F4F9FE;border:0.5px solid #B5D4F4;border-radius:var(--border-radius-md);padding:7px 10px"><span style="font-size:9px;font-weight:700;color:#0C3460;text-transform:uppercase;letter-spacing:.3px">Contech spoils&nbsp;</span>${spoilsPrevHtml('ct')}</div>
+      <div style="background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:7px 10px"><span style="font-size:9px;font-weight:700;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.3px">Competitor spoils&nbsp;</span>${spoilsPrevHtml('cp')}</div>
+    </div>`:''}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:${trenchSavings!==0?'10px':'0'}">
       <div style="background:#E6F1FB;border-radius:var(--border-radius-md);padding:12px;border:0.5px solid #B5D4F4">
         <div style="font-size:10px;font-weight:700;color:#0C3460;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Contech &mdash; ${S.product}</div>
@@ -2550,8 +2614,13 @@ function calculate(){
           <div style="font-size:10px;color:#185FA5;margin-top:1px">${fmtCY3(ctBfTot)} @ \$${(S.backfill.ctCost||0).toFixed(2)}/CY</div></div>
           <div style="font-size:16px;font-weight:700;color:#0C447C">${fmtDol(ctBfCost)}</div>
         </div>
+        ${ctHaul>0?`<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
+          <div><div style="font-size:11px;font-weight:600;color:#185FA5">Spoils haul-off</div>
+          <div style="font-size:10px;color:#185FA5;margin-top:1px">${spoilsMode()==='cy'?`${spoilsLooseCY('ct').toLocaleString('en-US',{maximumFractionDigits:0})} loose CY @ \$${(+S.spoils.haulPerCY||0).toFixed(2)}/CY`:`${spoilsLoads('ct').toLocaleString()} loads @ \$${(+S.spoils.haulPerLoad||0).toLocaleString()}/load`}</div></div>
+          <div style="font-size:16px;font-weight:700;color:#0C447C">${fmtDol(ctHaul)}</div>
+        </div>`:''}
         <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid #B5D4F4">
-          <div style="font-size:11px;font-weight:700;color:#0C3460">Excavation &amp; Backfill Total</div>
+          <div style="font-size:11px;font-weight:700;color:#0C3460">Excavation${ctHaul>0?', Backfill &amp; Haul':' &amp; Backfill'} Total</div>
           <div style="font-size:18px;font-weight:700;color:#0C3460">${fmtDol(ctTrenchTotal)}</div>
         </div>
       </div>
@@ -2567,8 +2636,13 @@ function calculate(){
           <div style="font-size:10px;color:var(--color-text-secondary);margin-top:1px">${fmtCY3(cpBfTot)} @ \$${(S.backfill.cpCost||0).toFixed(2)}/CY</div></div>
           <div style="font-size:16px;font-weight:700;color:var(--color-text-primary)">${fmtDol(cpBfCost)}</div>
         </div>
+        ${cpHaul>0?`<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
+          <div><div style="font-size:11px;font-weight:600;color:var(--color-text-secondary)">Spoils haul-off</div>
+          <div style="font-size:10px;color:var(--color-text-secondary);margin-top:1px">${spoilsMode()==='cy'?`${spoilsLooseCY('cp').toLocaleString('en-US',{maximumFractionDigits:0})} loose CY @ \$${(+S.spoils.haulPerCY||0).toFixed(2)}/CY`:`${spoilsLoads('cp').toLocaleString()} loads @ \$${(+S.spoils.haulPerLoad||0).toLocaleString()}/load`}</div></div>
+          <div style="font-size:16px;font-weight:700;color:var(--color-text-primary)">${fmtDol(cpHaul)}</div>
+        </div>`:''}
         <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid var(--color-border-tertiary)">
-          <div style="font-size:11px;font-weight:700;color:var(--color-text-primary)">Excavation &amp; Backfill Total</div>
+          <div style="font-size:11px;font-weight:700;color:var(--color-text-primary)">Excavation${cpHaul>0?', Backfill &amp; Haul':' &amp; Backfill'} Total</div>
           <div style="font-size:18px;font-weight:700;color:var(--color-text-primary)">${fmtDol(cpTrenchTotal)}</div>
         </div>
       </div>
@@ -2610,6 +2684,7 @@ function calculate(){
       <div class="sum-row"><span class="sum-lbl" style="padding-left:6px">Excavation total</span><span class="sum-val">\$${ctExcTotal.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>
       <div class="sum-row"><span class="sum-lbl">Backfill (${bfTypeCtLbl})</span><span class="sum-val">${ctBfCY>0?ctBfCY.toLocaleString('en-US',{maximumFractionDigits:1})+' CY @ $'+S.backfill.ctCost.toFixed(2)+'/CY':'—'}</span></div>
       <div class="sum-row"><span class="sum-lbl" style="padding-left:6px">Backfill total</span><span class="sum-val">\$${bfCt.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>
+      ${ctSpoilsCost>0?`<div class="sum-row"><span class="sum-lbl">Spoils haul-off</span><span class="sum-val">${spoilsDesc('ct')}</span></div><div class="sum-row"><span class="sum-lbl" style="padding-left:6px">Haul-off total</span><span class="sum-val">\$${ctSpoilsCost.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>`:''}
       ${ctOverhead>0?`<div class="sum-row"><span class="sum-lbl">Est. Contractor Overhead</span><span class="sum-val">${ctDays} days × $${S.dailyRate.toLocaleString()}/day</span></div><div class="sum-row"><span class="sum-lbl" style="padding-left:6px">Overhead total</span><span class="sum-val">\$${ctOverhead.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>`:''}
       ${ctJbT>0?`<div class="sum-row"><span class="sum-lbl">Structures & fittings</span><span class="sum-val">\$${ctJbT.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>`:''}
       <div class="sum-row"><span class="sum-lbl">Total project length</span><span class="sum-val">${ctLF.toLocaleString()} LF</span></div>
@@ -2622,6 +2697,7 @@ function calculate(){
       <div class="sum-row"><span class="sum-lbl" style="padding-left:6px">Excavation total</span><span class="sum-val">\$${cpExcTotal.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>
       <div class="sum-row"><span class="sum-lbl">Backfill (${bfTypeCpLbl})</span><span class="sum-val">${cpBfCY>0?cpBfCY.toLocaleString('en-US',{maximumFractionDigits:1})+' CY @ $'+S.backfill.cpCost.toFixed(2)+'/CY':'—'}</span></div>
       <div class="sum-row"><span class="sum-lbl" style="padding-left:6px">Backfill total</span><span class="sum-val">\$${bfCp.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>
+      ${cpSpoilsCost>0?`<div class="sum-row"><span class="sum-lbl">Spoils haul-off</span><span class="sum-val">${spoilsDesc('cp')}</span></div><div class="sum-row"><span class="sum-lbl" style="padding-left:6px">Haul-off total</span><span class="sum-val">\$${cpSpoilsCost.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>`:''}
       ${cpOverhead>0?`<div class="sum-row"><span class="sum-lbl">Est. Contractor Overhead</span><span class="sum-val">${cpDays} days × $${S.dailyRate.toLocaleString()}/day</span></div><div class="sum-row"><span class="sum-lbl" style="padding-left:6px">Overhead total</span><span class="sum-val">\$${cpOverhead.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>`:''}
       ${pcJbT>0?`<div class="sum-row"><span class="sum-lbl">Structures & fittings</span><span class="sum-val">\$${pcJbT.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>`:''}
       <div class="sum-row"><span class="sum-lbl">Total project length</span><span class="sum-val">${cpLF.toLocaleString()} LF</span></div>
@@ -2692,7 +2768,7 @@ function reset(){
   S={product:null,compName:'',compProduct:'',appType:'',projType:'',projName:'',projCity:'',projState:'',geo:null,installChip:null,
     visibleDiamLines:1,
     diam:{ct:newDiamRows(),cp:newDiamRows()},
-    exc:{ct:0,cp:0},inst:{ct:0,cp:0},instRateCt:0,instRateCp:0,dailyRate:0,
+    exc:{ct:0,cp:0},inst:{ct:0,cp:0},instRateCt:0,instRateCp:0,dailyRate:0,spoils:{swell:25,truckCY:14,haulPerLoad:0,mode:'load',haulPerCY:0},
   rcbLines:Array.from({length:15},()=>({cmpBarrels:1,cmpSpacing:0,cmpBedding:null,cmpWorkRoom:18,cmpCover:null,ctManning:0,cpBarrels:1,cpSpacing:0,cpBedding:null,cpWorkRoom:18,cpCover:null,cpManning:0,runs:1,runSpacing:0,bedding:12,workRoom:18,rcbCover:0,span:0,rise:0,wall:6,topSlab:6,botSlab:6,haunch:12,collapsed:true})),
     backfill:{ctType:'',ctCost:0,ctRebar:false,ctRebarCost:REBAR_SUGGESTED_COST,cpType:'',cpCost:0,cpRebar:false,cpRebarCost:REBAR_SUGGESTED_COST},
     jb:{ctUnit:0,ctQty:0,pcUnit:0,pcQty:0},
