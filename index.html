@@ -90,6 +90,12 @@ select.err,input.err{border-color:#E24B4A}
 .rate-val{font-size:18px;font-weight:600;color:#0C447C}
 .rate-unit{font-size:11px;color:var(--color-text-secondary)}
 .eq.on .eq.on.cp-on .eq.on .info{font-size:11px;color:var(--color-text-secondary);background:var(--color-background-secondary);padding:7px 9px;border-radius:var(--border-radius-md);margin-top:8px}
+.tip-wrap{position:relative;display:inline-flex;align-items:center}
+.tip-bulb{width:26px;height:26px;border-radius:50%;background:#FFF8DC;border:1px solid #E0C94F;display:inline-flex;align-items:center;justify-content:center;font-size:14px;cursor:help;user-select:none;flex-shrink:0}
+.tip-bulb:hover{background:#FFF3B8}
+.tip-pop{position:absolute;bottom:calc(100% + 8px);right:0;width:min(330px,82vw);background:#2b2b2b;color:#fff;font-size:11px;line-height:1.55;padding:10px 13px;border-radius:8px;box-shadow:0 4px 18px rgba(0,0,0,.28);opacity:0;visibility:hidden;transition:opacity .15s;z-index:200;pointer-events:none}
+.tip-pop.left{right:auto;left:0}
+.tip-wrap:hover .tip-pop,.tip-bulb:focus~.tip-pop{opacity:1;visibility:visible}
 .divider{height:0.5px;background:var(--color-border-tertiary);margin:1rem 0}
 .jb-card{background:var(--color-background-primary);border:0.5px solid #9FE1CB;border-radius:var(--border-radius-lg);padding:1.25rem;margin-bottom:1rem}
 .jb-header-strip{background:#E1F5EE;border-radius:var(--border-radius-md);padding:8px 12px;margin-bottom:1rem;display:flex;align-items:center;gap:8px}
@@ -422,6 +428,126 @@ function mergeState(loaded){
 function estimateName(){
   return (S.projName||`${S.product||'Estimate'} vs ${S.compName||S.compProduct||'competitor'}`).trim();
 }
+const GUIDE_CSS=`
+.g-wrap{font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#222;line-height:1.55}
+.g-hdr{display:flex;align-items:center;gap:14px;border-bottom:3px solid #1a4a7a;padding-bottom:12px;margin-bottom:6px}
+.g-hdr img{height:44px}
+.g-h1{font-size:20px;font-weight:700;color:#0C3460;line-height:1.2}
+.g-sub{font-size:12px;color:#666;margin-bottom:18px}
+.g-h2{font-size:16px;font-weight:700;color:#0C3460;margin:20px 0 6px;padding-bottom:3px;border-bottom:1px solid #c8d8ee}
+.g-h3{font-size:13.5px;font-weight:700;color:#1a4a7a;margin:0 0 3px}
+.g-wrap p{margin-bottom:8px}
+.g-wrap ul,.g-wrap ol{margin:0 0 8px 20px}
+.g-wrap li{margin-bottom:4px}
+.g-step{display:flex;gap:10px;margin-bottom:12px}
+.g-sn{flex-shrink:0;width:24px;height:24px;border-radius:50%;background:#1a4a7a;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.g-tip{background:#FFF8DC;border:1px solid #E0C94F;border-radius:6px;padding:8px 11px;margin:8px 0;font-size:12px}
+.g-tip b{color:#7a6800}
+.g-pbx{background:#FFFCE6;border:2px solid #D4B94A;border-radius:8px;padding:12px 14px;margin:12px 0}
+.g-pbx .g-h2{border:none;color:#7a6800;margin-top:0}
+.g-kv{display:grid;grid-template-columns:auto 1fr;gap:2px 14px;font-size:12px;margin:6px 0}
+.g-kv b{color:#1a4a7a}
+.g-sw{display:inline-block;width:22px;height:11px;border-radius:2px;vertical-align:middle;margin-right:4px}
+.g-foot{margin-top:24px;padding-top:8px;border-top:1px solid #ccc;font-size:10.5px;color:#888;display:flex;justify-content:space-between}
+`;
+function userGuideContent(){
+  return `<div class="g-wrap">
+  <div class="g-hdr"><img src="${CONTECH_LOGO}" alt="Contech"><div class="g-h1">Total Install Compare &mdash; User&rsquo;s Guide</div></div>
+  <div class="g-sub">Step-by-step instructions for building a Total Installed Cost comparison between a Contech product and a competitor.</div>
+
+  <div class="g-h2">What this tool does</div>
+  <p>It compares the <b>full installed cost</b> of a Contech drainage product against a competing product &mdash; not just material price. It accounts for trench excavation volume, backfill volume, installation speed, daily contractor overhead, and structures, then produces a contractor-ready summary you can print, save, or hand off.</p>
+  <p><span class="g-sw" style="background:#EBF4FD;border:1px solid #7CB9E8"></span><b>Light blue fields</b> = Contech inputs &nbsp;&nbsp; <span class="g-sw" style="background:#FFFCE6;border:1px solid #D4B94A"></span><b>Light yellow fields</b> = competitor inputs. This color key applies on every screen.</p>
+
+  <div class="g-h2">Step-by-step</div>
+  <div class="g-step"><div class="g-sn">1</div><div><div class="g-h3">Select products</div>
+  Pick the Contech product tile (CMP, Ultra-Flo, Slotted Drain, DuroMaxx, or PVC). Enter the <b>competitor product name</b> (required). The competitor <i>company</i> name is optional.
+  <div class="g-tip"><b>&#128161; Tip:</b> Type <b>Precast Box</b> as the competitor product to unlock box-culvert inputs &mdash; see the special section below.</div></div></div>
+
+  <div class="g-step"><div class="g-sn">2</div><div><div class="g-h3">Project context</div>
+  Enter the project name, city/county and state (optional, shown on the output), and select the application type and project type. Application type matters: <b>Storm sewer</b> adds a junction box &amp; fittings step.</div></div>
+
+  <div class="g-step"><div class="g-sn">3</div><div><div class="g-h3">Delivered material cost &amp; project length</div>
+  Start with one line item. For each line enter the <b>diameter</b>, delivered <b>$/LF</b>, and <b>total LF</b> for both products. Click <b>+ Add line item</b> for multi-size projects (up to 15 lines). Each numbered line automatically creates a matching trench comparison in the next section. Use <b>Copy diameters &amp; footage to competitor</b> to mirror the Contech layout, then just fill competitor pricing.</div></div>
+
+  <div class="g-step"><div class="g-sn">4</div><div><div class="g-h3">Trench excavation comparison (per line)</div>
+  One collapsible card per line item &mdash; click a header to expand it. Enter barrels, spacing, bedding, working room, and cover for each side. The tool calculates trench width/depth, excavation volume per LF, open area, wetted perimeter, hydraulic radius, and <b>conveyance K</b> so you can pair cost with hydraulic performance.
+  <div class="g-kv">
+    <b>Bedding defaults</b><span>CMP &amp; Ultra-Flo: 6 in &nbsp;&middot;&nbsp; HDPE products (DuroMaxx, N-12, etc.): 6 in &nbsp;&middot;&nbsp; others: 12 in</span>
+    <b>Cover defaults</b><span>CMP &amp; Ultra-Flo: 1 ft &nbsp;&middot;&nbsp; HDPE products: 2 ft &nbsp;&middot;&nbsp; others: 0 ft</span>
+    <b>Manning&rsquo;s n defaults</b><span>CMP/Ultra-Flo/DuroMaxx 0.012 &middot; PVC 0.011 &middot; concrete/box 0.013 &mdash; editable per line</span>
+  </div>
+  Every default can be overridden &mdash; type your own value and the results update instantly.</div></div>
+
+  <div class="g-step"><div class="g-sn">5</div><div><div class="g-h3">Excavation &amp; trenching rate</div>
+  Enter the contractor&rsquo;s excavation rate in <b>$/CY</b> for each product. Volume comes automatically from the per-line trench geometry &times; footage. Regional benchmark chips are provided if you need a starting point.</div></div>
+
+  <div class="g-step"><div class="g-sn">6</div><div><div class="g-h3">Backfill</div>
+  Choose the backfill type and enter material cost in <b>$/CY</b> per product. Backfill volume = excavated volume minus the pipe/box open area. If reinforced concrete encasement with rebar is selected, the rebar $/LF is added on top.</div></div>
+
+  <div class="g-step"><div class="g-sn">7</div><div><div class="g-h3">Installation &amp; daily overhead</div>
+  Enter each crew&rsquo;s production rate in <b>LF/day</b> and one <b>daily overhead rate</b> ($/day: crew wages, equipment rental, traffic control, site overhead). Install duration = LF &divide; rate. Fewer days &times; daily overhead is often the largest hidden saving.</div></div>
+
+  <div class="g-step"><div class="g-sn">8</div><div><div class="g-h3">Junction boxes &amp; fittings <span style="font-weight:400;color:#666">(storm sewer only)</span></div>
+  Toggle the structures each design needs, set quantity and unit cost. Fitting names follow your selected Contech product.</div></div>
+
+  <div class="g-step"><div class="g-sn">9</div><div><div class="g-h3">Summary &amp; outputs</div>
+  The summary leads with the savings headline, blended $/LF, install-time cards, and side-by-side cost breakdowns, followed by material-by-diameter, the trench excavation summary (CY quantities and costs a contractor can verify), and project details. From the action row you can:
+  <ul>
+  <li><b>Print / Save as PDF</b> &mdash; client-ready summary document</li>
+  <li><b>Export Contractor Form</b> &mdash; landscape worksheet pre-filled with every assumption for the contractor to confirm or correct</li>
+  <li><b>Save Estimate</b> &mdash; see below</li>
+  </ul></div></div>
+
+  <div class="g-h2">Saving &amp; loading estimates</div>
+  <p><b>Save:</b> On the summary page, click the purple <b>Save Estimate</b> button. A dialog suggests a standardized file name (date &ndash; project &ndash; location &ndash; products); accept or edit it, then <b>Download &amp; Save</b>. This downloads a <b>.json</b> file <i>and</i> keeps a copy in your browser.</p>
+  <p><b>Load:</b> On the first screen, recent saves from this browser appear at the top with one-click <b>Load</b>. To restore a downloaded file (or one a colleague emailed you), click <b>Load estimate from file</b> and pick the .json. Everything is restored &mdash; products, line items, trench inputs, rates &mdash; and you land on the cost inputs ready to adjust and re-run.</p>
+  <div class="g-tip"><b>&#128161; Tip:</b> Browser saves live only on that device and are trimmed to the 10 most recent &mdash; the downloaded .json file is the permanent record. Save one per revision (v1, v2&hellip;) into the project folder.</div>
+
+  <div class="g-pbx">
+  <div class="g-h2">Special section: comparing against Precast Box</div>
+  <ol>
+  <li>In Step 1, type <b>Precast Box</b> as the competitor product name (e.g. &ldquo;Precast Box&rdquo; or &ldquo;Rinker Precast Box&rdquo;).</li>
+  <li>A yellow banner confirms box mode. <b>Box dimensions are required for every line item</b> &mdash; each line can be a different box size.</li>
+  <li>Expand each trench line card. In the competitor column, fill the yellow <b>Box opening dimensions</b>: inside <b>span</b> and <b>rise</b> in feet.</li>
+  <li>Confirm the <b>section thicknesses</b>: wall, top slab, and bottom slab default to <b>6 in</b>, haunch to <b>12 in</b> &mdash; adjust to the precaster&rsquo;s cut sheet.</li>
+  <li>Set <b>runs</b> (parallel barrels), spacing, bedding, working room, and cover as usual.</li>
+  </ol>
+  <p style="margin-bottom:0"><b>How the box math works:</b> trench width uses the outside box width (span + 2&times;wall) per run; open area = span &times; rise minus the four haunch triangles; wetted perimeter = 2&times;(span + rise). Conveyance uses concrete&rsquo;s Manning&rsquo;s n of 0.013, so the summary compares hydraulic capacity as well as installed cost.</p>
+  </div>
+
+  <div class="g-foot"><span>Contech Engineered Solutions &middot; CESTIC User&rsquo;s Guide</span><span>Rev. ${new Date().toLocaleDateString('en-US')}</span></div>
+  </div>`;
+}
+function userGuide(){
+  const ex=document.getElementById('guide-modal');if(ex){ex.remove();return;}
+  const m=document.createElement('div');
+  m.id='guide-modal';
+  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:1000;padding:18px';
+  m.innerHTML='<div style="background:#fff;border-radius:12px;width:min(760px,95vw);max-height:90vh;display:flex;flex-direction:column;box-shadow:0 10px 50px rgba(0,0,0,.35);overflow:hidden">'
+    +'<div style="display:flex;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid #ddd;flex-shrink:0">'
+    +'<div style="font-size:15px;font-weight:700;color:#0C3460;flex:1">User&rsquo;s Guide</div>'
+    +'<button onclick="userGuidePrint()" style="padding:6px 14px;background:#1a4a7a;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">Print / Save as PDF</button>'
+    +'<button onclick="document.getElementById(\'guide-modal\').remove()" aria-label="Close" style="width:30px;height:30px;background:transparent;border:1px solid #ccc;border-radius:6px;font-size:15px;color:#555;cursor:pointer;line-height:1">&#10005;</button>'
+    +'</div>'
+    +'<div id="guide-scroll" style="overflow-y:auto;padding:18px 22px"><style>'+GUIDE_CSS+'</style>'+userGuideContent()+'</div>'
+    +'</div>';
+  m.onclick=(e)=>{if(e.target===m)m.remove();};
+  document.body.appendChild(m);
+  document.addEventListener('keydown',function esc(e){if(e.key==='Escape'){const g=document.getElementById('guide-modal');if(g)g.remove();document.removeEventListener('keydown',esc);}});
+}
+function userGuidePrint(){
+  const html=`<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>CESTIC User&rsquo;s Guide</title><style>
+  @page{size:letter;margin:.6in .7in}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{max-width:7.2in;margin:0 auto;padding:20px 0}
+  ${GUIDE_CSS}
+  @media print{button{display:none!important}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+  </style></head><body>${userGuideContent()}
+  <div style="text-align:center;margin-top:16px"><button onclick="window.print()" style="padding:9px 26px;background:#1a4a7a;color:#fff;border:none;border-radius:6px;font-size:12pt;font-weight:700;cursor:pointer">Print / Save as PDF</button></div>
+  </body></html>`;
+  openInNewTab(html,'CESTIC User Guide');
+}
 function defaultFileName(){
   const d=new Date();
   const mm=String(d.getMonth()+1).padStart(2,'0');
@@ -520,6 +646,10 @@ function savedListHtml(){
       <input type="file" accept=".json,application/json" onchange="handleLoadFile(this)" style="display:none">
     </label>
     <span style="font-size:10px;color:var(--color-text-secondary)">Restore a previously saved .json estimate</span>
+    <button onclick="userGuide()" style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:#1a4a7a;color:#fff;border:none;border-radius:var(--border-radius-md);font-size:11px;font-weight:600;cursor:pointer">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2.5C5 1.5 3.5 1.2 1.5 1.4v8.2c2-.2 3.5.1 4.5 1.1 1-1 2.5-1.3 4.5-1.1V1.4C8.5 1.2 7 1.5 6 2.5zM6 2.5v8.2" stroke="#fff" stroke-width="1.1" stroke-linejoin="round"/></svg>
+      User&rsquo;s Guide (PDF)
+    </button>
   </div>`;
   if(!saves.length)return `<div class="card ac" style="margin-bottom:.75rem">${fileRow}</div>`;
   let rows='';
@@ -848,6 +978,9 @@ function copyDiamToComp(){
   rCosts();
 }
 
+function tipHtml(text,align){
+  return `<span class="tip-wrap"><span class="tip-bulb" tabindex="0" aria-label="Help">&#128161;</span><span class="tip-pop${align==='left'?' left':''}">${text}</span></span>`;
+}
 function diamRowsHtml(side){
   const badgeClass=side==='ct'?'badge-ct':'badge-cp';
   const badgeText=side==='ct'?'Contech':'Competitor';
@@ -1362,7 +1495,7 @@ function rcbLinesHtml(){
     ${sharedBox}
     ${pbxBanner}
     ${active.map(i=>rcbLineCardHtml(i)).join('')}
-    <div class="info" style="margin-top:6px">Diameters auto-populate from Section 3. Footage totals from Section 3 LF. Project cost calculations aggregate CY across all lines at the $/CY rates in Section 4.</div>
+    <div style="display:flex;justify-content:flex-end;margin-top:6px">${tipHtml('Diameters auto-populate from Section 3. Footage totals come from Section 3 LF. Project cost calculations aggregate cubic yards across all lines at the $/CY rates in Sections 4 & 5.')}</div>
   </div>`;
 }
 
@@ -1404,7 +1537,7 @@ function rCosts(){
     </div>
     ${diamRowsHtml('cp')}
     <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px">
-      <div class="info" style="margin:0">Only filled rows count toward material cost, project length, and trench comparisons.</div>
+      ${tipHtml("Only filled rows count toward material cost, project length, and trench comparisons. Each line item creates its own trench excavation comparison below.",'left')}
       ${S.visibleDiamLines<15?`<button onclick="S.visibleDiamLines=Math.min(15,S.visibleDiamLines+1);rCosts()" style="flex-shrink:0;margin-left:10px;display:flex;align-items:center;gap:5px;padding:5px 12px;background:#1a4a7a;color:#fff;border:none;border-radius:var(--border-radius-md);font-size:11px;font-weight:600;cursor:pointer">
         <span style="font-size:15px;line-height:1">+</span> Add line item
         <span style="opacity:.7;font-size:10px">${S.visibleDiamLines}/15</span>
@@ -1425,7 +1558,7 @@ function rCosts(){
     ${backfillBlockHtml('ct')}
     <div class="divider"></div>
     ${backfillBlockHtml('cp')}
-    <div class="info">Backfill cost is entered in $/CY. Volume is calculated automatically from the trench excavation comparison above (excavated volume minus pipe/box open area × project linear feet). Enter pipe dimensions in the trench comparison section to activate the backfill cost calculation. Rebar cost ($/LF) is added on top of material cost when reinforced concrete encasement with rebar is selected.</div>
+    <div style="display:flex;justify-content:flex-end;margin-top:4px">${tipHtml('Backfill cost is entered in $/CY. Volume is calculated automatically: excavated volume minus pipe/box open area &times; project linear feet, from the trench comparison above. Rebar cost ($/LF) is added on top when RCC with rebar is selected.')}</div>
   </div>`;
 
   const instCard=`<div class="card ac" style="margin-bottom:.75rem"><div class="sh"><div class="sn">6</div><div><div class="st">Installation labor</div><div class="ss">Enter crew production rate to estimate project schedule and schedule cost advantage</div></div></div>
@@ -1450,7 +1583,7 @@ function rCosts(){
         })()}
       </div>
     </div>
-    <div class="info" style="margin-top:8px">Daily overhead includes contractor crew wages, equipment rental, traffic control, site overhead, and any indirect costs billed per working day. Multiplied by the day difference to produce a schedule cost advantage shown in the summary.</div></div>`;
+    <div style="display:flex;justify-content:flex-end;margin-top:8px">${tipHtml('Daily overhead includes crew wages, equipment rental, traffic control, site overhead, and indirect costs billed per working day. It is multiplied by each product&rsquo;s install duration &mdash; a faster install directly reduces total project cost.')}</div></div>`;
 
 
   const nextLabel=isStormSewer()?'Next: Junction boxes ›':'View cost comparison summary ›';
@@ -1974,6 +2107,84 @@ function diamTableRows(side){
   });
 }
 
+function showInternalCompare(){
+  const ex=document.getElementById('ic-modal');if(ex){ex.remove();return;}
+  const cpN=(S.compName||'Competitor')+(S.compProduct?' '+S.compProduct:'');
+  const ctN='Contech '+(S.product||'');
+  const ctLF=totalLF('ct'),cpLF=totalLF('cp');
+  const ctMat=materialTotal('ct'),cpMat=materialTotal('cp');
+  const ctExcCY=excavationCY('ct'),cpExcCY=excavationCY('cp');
+  const ctExc=excavationTotal('ct'),cpExc=excavationTotal('cp');
+  const ctBfCY=backfillCY('ct'),cpBfCY=backfillCY('cp');
+  const ctBf=backfillTotal('ct'),cpBf=backfillTotal('cp');
+  const ctFit=jbTotal('ct'),cpFit=jbTotal('cp');
+  const ctDays=S.instRateCt>0&&ctLF>0?Math.ceil(ctLF/S.instRateCt):null;
+  const cpDays=S.instRateCp>0&&cpLF>0?Math.ceil(cpLF/S.instRateCp):null;
+  const ctOH=ctDays?ctDays*(S.dailyRate||0):0;
+  const cpOH=cpDays?cpDays*(S.dailyRate||0):0;
+  const ctTotal=ctMat+ctExc+ctBf+ctFit+ctOH;
+  const cpTotal=cpMat+cpExc+cpBf+cpFit+cpOH;
+  let ctK=0,cpK=0;
+  activeLines().forEach(i=>{ctK+=cmpTrenchLine(i).conveyance;cpK+=cpTrenchLine(i).conveyance;});
+  const $=v=>'$'+Math.round(v).toLocaleString();
+  const cy=v=>v.toLocaleString('en-US',{maximumFractionDigits:1})+' CY';
+
+  const ctFav=[],cpFav=[];
+  function judge(label,ctVal,cpVal,fmt,whyCt,whyCp,lowerWins){
+    if(!(ctVal>0)&&!(cpVal>0))return;
+    const d=Math.abs(ctVal-cpVal);
+    if(d<0.005*Math.max(ctVal,cpVal))return; // effectively tied
+    const ctWins=lowerWins?ctVal<cpVal:ctVal>cpVal;
+    const row={label,ct:fmt(ctVal),cp:fmt(cpVal),delta:fmt(d),why:ctWins?whyCt:whyCp};
+    (ctWins?ctFav:cpFav).push(row);
+  }
+  judge('Delivered material cost',ctMat,cpMat,$,'Lower material spend before a shovel hits the ground.','Their material is cheaper delivered — win on installed cost, not sticker price.',true);
+  judge('Excavation volume',ctExcCY,cpExcCY,cy,'Smaller trench = less digging, less spoil to haul, less disturbance.','Their footprint excavates less — check bedding/working-room assumptions.',true);
+  judge('Excavation cost',ctExc,cpExc,$,'Direct contractor saving at the bid rate.','They carry lower excavation cost at the entered rates.',true);
+  judge('Backfill volume',ctBfCY,cpBfCY,cy,'Less imported backfill to purchase, place, and compact.','They need less backfill volume — verify open-area inputs.',true);
+  judge('Backfill cost',ctBf,cpBf,$,'Fewer cubic yards purchased at the same $/CY.','Their backfill line is cheaper as entered.',true);
+  judge('Structures & fittings',ctFit,cpFit,$,'Fewer/cheaper structures required for the Contech layout.','Their structure count/pricing comes in lower.',true);
+  if(ctDays&&cpDays&&ctDays!==cpDays){
+    const fast=ctDays<cpDays;
+    const row={label:'Installation schedule',ct:ctDays+' days',cp:cpDays+' days',delta:Math.abs(cpDays-ctDays)+' days',
+      why:fast?'Faster install = '+$((cpDays-ctDays)*(S.dailyRate||0))+' less contractor overhead, earlier road opening, less traffic control exposure.':'They install faster as entered — challenge the LF/day assumption or highlight crew familiarity.'};
+    (fast?ctFav:cpFav).push(row);
+  }
+  judge('Contractor overhead',ctOH,cpOH,$,'Schedule advantage converted to dollars at the daily rate.','Their shorter schedule cuts overhead — verify production rates.',true);
+  judge('Hydraulic conveyance (full-flow K)',ctK,cpK,v=>Math.round(v).toLocaleString()+' cfs','More capacity per the entered geometry and Manning\u2019s n — performance story on top of cost.','Their section carries more flow — lead with installed cost and schedule instead.',false);
+  judge('TOTAL INSTALLED COST',ctTotal,cpTotal,$,'The bottom line: full project cost favors Contech.','Their total is lower as entered — revisit assumptions or focus on schedule, hydraulics, and risk.',true);
+
+  const rowHtml=(r,color)=>'<div style="padding:9px 11px;border:0.5px solid '+(color==='ct'?'#B5D4F4':'#D4B94A')+';border-radius:8px;margin-bottom:7px;background:'+(color==='ct'?'#F4F9FE':'#FFFDF0')+'">'
+    +'<div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline"><span style="font-size:12px;font-weight:700;color:'+(color==='ct'?'#0C3460':'#7a6800')+'">'+r.label+'</span>'
+    +'<span style="font-size:11px;font-weight:700;color:'+(color==='ct'?'#1a4a7a':'#8a7500')+'">\u0394 '+r.delta+'</span></div>'
+    +'<div style="font-size:10.5px;color:#555;margin:2px 0">'+ctN+': <b>'+r.ct+'</b> &nbsp;vs&nbsp; '+cpN+': <b>'+r.cp+'</b></div>'
+    +'<div style="font-size:10.5px;color:#333;line-height:1.45">'+r.why+'</div></div>';
+
+  const m=document.createElement('div');
+  m.id='ic-modal';
+  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:1000;padding:18px';
+  m.innerHTML='<div style="background:#fff;border-radius:12px;width:min(860px,95vw);max-height:90vh;display:flex;flex-direction:column;box-shadow:0 10px 50px rgba(0,0,0,.35);overflow:hidden">'
+    +'<div style="display:flex;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid #ddd;flex-shrink:0">'
+    +'<span style="background:#b03030;color:#fff;font-size:9px;font-weight:800;letter-spacing:.6px;padding:3px 8px;border-radius:4px">INTERNAL</span>'
+    +'<div style="font-size:15px;font-weight:700;color:#0C3460;flex:1">Comparison Talking Points <span style="font-weight:400;font-size:11px;color:#888">&mdash; rep use only, not for customer distribution</span></div>'
+    +'<button onclick="document.getElementById(\'ic-modal\').remove()" aria-label="Close" style="width:30px;height:30px;background:transparent;border:1px solid #ccc;border-radius:6px;font-size:15px;color:#555;cursor:pointer;line-height:1">&#10005;</button>'
+    +'</div>'
+    +'<div style="overflow-y:auto;padding:16px 20px">'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'
+    +'<div><div style="font-size:11px;font-weight:800;color:#0C3460;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">&#9989; Where '+ctN+' wins ('+ctFav.length+')</div>'
+    +(ctFav.length?ctFav.map(r=>rowHtml(r,'ct')).join(''):'<div style="font-size:11px;color:#888;font-style:italic">No quantified advantages with the current inputs.</div>')+'</div>'
+    +'<div><div style="font-size:11px;font-weight:800;color:#7a6800;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">&#9888;&#65039; Where '+cpN+' wins ('+cpFav.length+')</div>'
+    +(cpFav.length?cpFav.map(r=>rowHtml(r,'cp')).join(''):'<div style="font-size:11px;color:#888;font-style:italic">No quantified advantages with the current inputs \u2014 clean sweep.</div>')+'</div>'
+    +'</div>'
+    +'<div style="margin-top:12px;padding:10px 13px;border-radius:8px;background:'+(ctTotal<cpTotal?'#0C3460':'#555')+';color:#fff;font-size:12px;font-weight:600">'
+    +(ctTotal<cpTotal?'Net position: '+ctN+' delivers the project for '+$(cpTotal-ctTotal)+' less ('+(cpTotal>0?((cpTotal-ctTotal)/cpTotal*100).toFixed(1):0)+'% below '+cpN+'). Lead with total installed cost; reinforce with schedule and hydraulics.':'Net position: '+cpN+' totals '+$(ctTotal-cpTotal)+' lower as currently entered. Pressure-test their assumptions above, and sell schedule, capacity, and installation risk.')
+    +'</div>'
+    +'<div style="font-size:9.5px;color:#999;margin-top:8px">Figures reflect the current inputs in this session. Items within 0.5% are treated as tied and omitted.</div>'
+    +'</div></div>';
+  m.onclick=(e)=>{if(e.target===m)m.remove();};
+  document.body.appendChild(m);
+  document.addEventListener('keydown',function esc(e){if(e.key==='Escape'){const g=document.getElementById('ic-modal');if(g)g.remove();document.removeEventListener('keydown',esc);}});
+}
 function calculate(){
   if(!isStormSewer()){S.jb={ctUnit:0,ctQty:0,pcUnit:0,pcQty:0};S.fit={ct:newFit(),cp:newFit()};}
   const bfCt=backfillTotal('ct');
@@ -2365,7 +2576,7 @@ function calculate(){
 
     ${trenchSavings>0?`<div class="rcb-savings-row"><span class="rcb-savings-txt">Contech ${S.product} saves <strong style="font-weight:600">${fmtDol(trenchSavings)}</strong> on excavation &amp; backfill</span><span class="rcb-savings-badge">$${Math.round(trenchSavings/1000)}K savings</span></div>`:trenchSavings<0?`<div class="rcb-savings-row" style="background:var(--color-background-secondary);border-color:var(--color-border-tertiary)"><span class="rcb-savings-txt">${cpLabelTEC} is ${fmtDol(-trenchSavings)} lower on excavation &amp; backfill</span><span class="rcb-savings-badge" style="background:#555">Competitor advantage</span></div>`:''}
 
-    <div class="info" style="margin-top:8px">Volumes from trench geometry &times; Section 3 linear footage per line. Costs = CY &times; $/CY from Sections 4 &amp; 5.</div>
+    <div style="display:flex;justify-content:flex-end;margin-top:8px">${tipHtml('Volumes are calculated from each line&rsquo;s trench geometry &times; its Section 3 linear footage. Costs = cubic yards &times; the $/CY rates entered in Sections 4 &amp; 5.')}</div>
   </div>`;
   const carbonBlock=`<div class="carbon-block">
     <div class="carbon-title-row"><div class="carbon-leaf"></div><div class="carbon-title">Relative carbon footprint — cradle to gate</div></div>
@@ -2451,10 +2662,6 @@ function calculate(){
     </div>`;
 
   document.getElementById('v-results').innerHTML=`<div class="card">
-    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap">
-      <img src="${CONTECH_LOGO}" alt="Contech Engineered Solutions" style="height:52px;width:auto;flex-shrink:0">
-      <div><div style="font-size:17px;font-weight:700;color:#0C3460;line-height:1.2">CONTECH Engineered Solutions Total Install Compare${S.projName?` — ${S.projName}`:''}</div><div class="ss" style="margin-top:2px">${S.appType} · ${S.projType}</div></div>
-    </div>
     ${banner}${statGrid}${schedNote}${sumGrid}${diamSection}${rcbSummaryBlock}${jbBlock2}${carbonBlock}${details}
     <div class="action-row">
       <button class="btn-pdf" onclick="printSummary()">
@@ -2464,6 +2671,10 @@ function calculate(){
       <button class="btn-pdf" style="background:#2d6e3e;border-color:#2d6e3e" onclick="exportContractorForm()">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1.5" y="1" width="11" height="12" rx="1.5" stroke="#fff" stroke-width="1.2"/><path d="M4 4h6M4 6.5h6M4 9h3M9 8.5l2 2-2 2" stroke="#fff" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Export Contractor Form
+      </button>
+      <button class="btn-pdf" style="background:#3d3d3d;border-color:#3d3d3d" onclick="showInternalCompare()">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7s2.2-4 6-4 6 4 6 4-2.2 4-6 4-6-4-6-4z" stroke="#fff" stroke-width="1.2" stroke-linejoin="round"/><circle cx="7" cy="7" r="1.8" stroke="#fff" stroke-width="1.2"/></svg>
+        Internal Comparison
       </button>
       <button class="btn-pdf" id="save-est-btn" style="background:#6b4a9e;border-color:#6b4a9e" onclick="saveEstimate()">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2h8l2 2v8H2V2z" stroke="#fff" stroke-width="1.2" stroke-linejoin="round"/><path d="M4 2v3h5V2M4 12V8h6v4" stroke="#fff" stroke-width="1.2" stroke-linejoin="round"/></svg>
