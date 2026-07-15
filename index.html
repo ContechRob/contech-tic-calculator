@@ -272,7 +272,7 @@ select.err,input.err{border-color:#E24B4A}
 </div>
 
 <script>
-const PRODUCTS=['CMP','Ultra-Flo','Slotted Drain','DuroMaxx','PVC'];
+const PRODUCTS=['CMP','Ultra-Flo','Slotted Drain','DuroMaxx','A2000'];
 const INSTALL_BENCHMARKS={
   'CMP':[
     {label:'Small diameter (12"–36")',range:'$4–$9',low:4,high:9,detail:'Standard crew with excavator. Corrugated coupling bands — fast field connection. Typical production 250–400 LF/day on straightforward sites.'},
@@ -299,7 +299,7 @@ const INSTALL_BENCHMARKS={
     {label:'Sliplining / reline',range:'$8–$20',low:8,high:20,detail:'Annular grouting and end sealing add labor. Production depends heavily on existing pipe condition.'},
     {label:'Remote / rural site',range:'$6–$13',low:6,high:13,detail:'Lower traffic control and congestion costs. Open-trench work is faster.'},
   ],
-  'PVC':[
+  'A2000':[
     {label:'Small diameter (4"–12")',range:'$3–$7',low:3,high:7,detail:'Solvent weld or gasketed joint. Lightweight, fast installation. Typical production 300–500 LF/day.'},
     {label:'Medium diameter (15"–24")',range:'$6–$12',low:6,high:12,detail:'Gasketed bell-and-spigot. Requires embedment care to avoid deflection. 200–350 LF/day.'},
     {label:'Large diameter (27"–48")',range:'$10–$20',low:10,high:20,detail:'Profile wall PVC — lighter than solid wall. Careful bedding and haunching required. 100–200 LF/day.'},
@@ -343,7 +343,8 @@ const MANNING_N={
   'Ultra-Flo':0.012, // Polymer-coated steel, smooth interior
   'Slotted Drain':0.013,
   'DuroMaxx':0.012,  // Steel-reinforced HDPE, smooth HDPE liner
-  'PVC':0.011,       // Smooth-wall PVC
+  'A2000':0.011,     // A2000 profile-wall PVC, smooth interior
+  'PVC':0.011,       // Smooth-wall PVC (competitor lookup)
   'box':0.013,       // Concrete box culvert (AASHTO)
   'hdpe':0.012,
   'concrete':0.013,
@@ -368,7 +369,7 @@ const CARBON_CT={
   'Ultra-Flo':{val:'Moderate',why:'Polymer-coated steel construction balances durability with a lighter material footprint than full concrete sections.',eol:'Steel core is recyclable through standard scrap steel channels after polymer liner removal.'},
   'Slotted Drain':{val:'Lower–Moderate',why:'Compact steel/ductile iron grate assembly uses less raw material per linear foot than full box culvert systems.',eol:'Metal components are highly recyclable; grates commonly reclaimed by scrap processors.'},
   'DuroMaxx':{val:'Lower',why:'Steel-reinforced polyethylene uses substantially less raw material mass than concrete or ductile iron at equivalent strength.',eol:'HDPE shell is recyclable; steel reinforcement is separable and recyclable through standard scrap streams.'},
-  'PVC':{val:'Lower',why:'Lightweight thermoplastic requires less energy to manufacture and transport than concrete or metal pipe of equal capacity.',eol:'PVC is mechanically recyclable; reclaimed material is commonly reprocessed into new pipe or fittings.'},
+  'A2000':{val:'Lower',why:'Lightweight thermoplastic requires less energy to manufacture and transport than concrete or metal pipe of equal capacity.',eol:'PVC is mechanically recyclable; reclaimed material is commonly reprocessed into new pipe or fittings.'},
 };
 const CARBON_COMPETITOR_PROFILES=[
   {keys:['rcp','concrete','reinforced concrete'],val:'Higher',why:'Cement production is energy- and carbon-intensive, and concrete sections are heavier — increasing transport-related emissions.',eol:'Concrete is typically crushed for aggregate reuse rather than recycled into new pipe; limited closed-loop recycling.'},
@@ -379,6 +380,9 @@ const CARBON_COMPETITOR_PROFILES=[
   {keys:['frp','fiberglass','grp'],val:'Moderate',why:'Resin and glass fiber manufacturing is energy-intensive and the composite is difficult to separate into base materials.',eol:'Composite construction limits recyclability — typically landfilled or downcycled.'},
 ];
 const CARBON_DEFAULT={val:'Varies by material',why:'Embodied carbon depends heavily on the specific material composition of the competing product.',eol:'Recyclability and disposal pathway depend on the base material used.'};
+// Back-compat: estimates saved before the PVC → A2000 rename
+INSTALL_BENCHMARKS['PVC']=INSTALL_BENCHMARKS['A2000'];
+CARBON_CT['PVC']=CARBON_CT['A2000'];
 
 function getCompetitorCarbon(){
   const name=(S.compProduct+' '+S.compName).toLowerCase();
@@ -460,7 +464,7 @@ function userGuideContent(){
 
   <div class="g-h2">Step-by-step</div>
   <div class="g-step"><div class="g-sn">1</div><div><div class="g-h3">Select products</div>
-  Pick the Contech product tile (CMP, Ultra-Flo, Slotted Drain, DuroMaxx, or PVC). Enter the <b>competitor product name</b> (required). The competitor <i>company</i> name is optional.
+  Pick the Contech product tile (CMP, Ultra-Flo, Slotted Drain, DuroMaxx, or A2000). Enter the <b>competitor product name</b> (required). The competitor <i>company</i> name is optional.
   <div class="g-tip"><b>&#128161; Tip:</b> Type <b>Precast Box</b> as the competitor product to unlock box-culvert inputs &mdash; see the special section below.</div></div></div>
 
   <div class="g-step"><div class="g-sn">2</div><div><div class="g-h3">Project context</div>
