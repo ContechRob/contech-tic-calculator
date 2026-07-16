@@ -90,6 +90,9 @@ select.err,input.err{border-color:#E24B4A}
 .rate-val{font-size:18px;font-weight:600;color:#0C447C}
 .rate-unit{font-size:11px;color:var(--color-text-secondary)}
 .eq.on .eq.on.cp-on .eq.on .info{font-size:11px;color:var(--color-text-secondary);background:var(--color-background-secondary);padding:7px 9px;border-radius:var(--border-radius-md);margin-top:8px}
+.mk-tb{padding:5px 11px;font-size:11px;font-weight:600;color:#fff;background:transparent;border:1px solid #4a7ba8;border-radius:6px;cursor:pointer}
+.mk-tb:hover{background:rgba(255,255,255,.12)}
+.mk-chip{padding:5px 11px;font-size:11px;font-weight:700;color:#fff;border:none;border-radius:14px;cursor:pointer}
 .tip-wrap{position:relative;display:inline-flex;align-items:center}
 .tip-bulb{width:26px;height:26px;border-radius:50%;background:#FFF8DC;border:1px solid #E0C94F;display:inline-flex;align-items:center;justify-content:center;font-size:14px;cursor:help;user-select:none;flex-shrink:0}
 .tip-bulb:hover{background:#FFF3B8}
@@ -522,6 +525,320 @@ function userGuideContent(){
   <div class="g-foot"><span>Contech Engineered Solutions &middot; CESTIC User&rsquo;s Guide</span><span>Rev. ${new Date().toLocaleDateString('en-US')}</span></div>
   </div>`;
 }
+// ── Site Plan Markup (PDF trace & callout) ──────────────────────────────
+const MK_PRODUCTS=[
+  {name:'CMP',color:'#1a4a7a'},
+  {name:'Ultra-Flo',color:'#2e7d4f'},
+  {name:'Slotted Drain',color:'#b03030'},
+  {name:'DuroMaxx',color:'#6b4a9e'},
+  {name:'A2000',color:'#d97706'},
+  {name:'Note',color:'#111111'},
+];
+let MK={doc:null,page:1,pages:0,scale:1.4,mode:'trace',prod:0,width:4,
+        anns:{},cur:null,bg:null,ov:null,pdfjsReady:false};
+
+function mkLoadPdfJs(cb){
+  if(window.pdfjsLib){MK.pdfjsReady=true;cb();return;}
+  const s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+  s.onload=()=>{
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    MK.pdfjsReady=true;cb();
+  };
+  s.onerror=()=>{alert('Could not load the PDF engine. Check your internet connection and try again.');};
+  document.head.appendChild(s);
+}
+
+function openMarkup(){
+  const ex=document.getElementById('mk-modal');if(ex){ex.remove();return;}
+  MK={doc:null,page:1,pages:0,scale:1.4,mode:'trace',prod:0,width:4,anns:{},cur:null,bg:null,ov:null,pdfjsReady:MK.pdfjsReady};
+  const m=document.createElement('div');
+  m.id='mk-modal';
+  m.style.cssText='position:fixed;inset:0;background:rgba(10,20,32,.92);display:flex;flex-direction:column;z-index:1000';
+  m.innerHTML=`
+  <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:#0F2A47;flex-wrap:wrap;flex-shrink:0">
+    <div style="font-size:14px;font-weight:700;color:#fff;margin-right:6px">Site Plan Markup</div>
+    <span style="font-size:10px;color:#90c8f0;margin-right:auto">Trace drainage lines &amp; call out Contech products</span>
+    <span id="mk-pagenav" style="display:none;align-items:center;gap:6px">
+      <button onclick="mkGoPage(-1)" class="mk-tb">&#8249;</button>
+      <span id="mk-pageno" style="font-size:11px;color:#fff;min-width:52px;text-align:center"></span>
+      <button onclick="mkGoPage(1)" class="mk-tb">&#8250;</button>
+      <button onclick="mkZoom(-0.2)" class="mk-tb">&#8722;</button>
+      <button onclick="mkZoom(0.2)" class="mk-tb">+</button>
+    </span>
+    <button onclick="mkExport()" class="mk-tb" style="background:#2e7d4f;border-color:#2e7d4f">Print / Save as PDF</button>
+    <button onclick="document.getElementById('mk-modal').remove()" class="mk-tb" aria-label="Close">&#10005; Close</button>
+  </div>
+  <div id="mk-tools" style="display:none;align-items:center;gap:6px;padding:8px 14px;background:#123354;flex-wrap:wrap;flex-shrink:0">
+    <span style="font-size:9px;font-weight:700;color:#90c8f0;text-transform:uppercase;letter-spacing:.4px">Product</span>
+    ${MK_PRODUCTS.map((p,i)=>`<button id="mk-p${i}" onclick="mkSetProd(${i})" class="mk-chip" style="background:${p.color}">${p.name}</button>`).join('')}
+    <span style="display:inline-flex;align-items:center;gap:5px;margin-left:4px">
+      <span style="font-size:9px;font-weight:700;color:#90c8f0;text-transform:uppercase;letter-spacing:.4px">Diameter</span>
+      <input type="text" id="mk-dia" placeholder="36&quot;" style="width:64px;padding:4px 7px;font-size:11px;font-weight:700;border:none;border-radius:5px;text-align:center">
+    </span>
+    <span style="width:10px"></span>
+    <span style="font-size:9px;font-weight:700;color:#90c8f0;text-transform:uppercase;letter-spacing:.4px">Tool</span>
+    <button id="mk-mtrace" onclick="mkSetMode('trace')" class="mk-tb">&#9998; Trace line</button>
+    <button id="mk-mlabel" onclick="mkSetMode('label')" class="mk-tb">&#127991; Callout</button>
+    <button id="mk-mfit" onclick="mkSetMode('fitting')" class="mk-tb">&#9711; CES Fitting</button>
+    <select onchange="MK.width=+this.value" style="font-size:11px;padding:4px;border-radius:5px;border:none">
+      <option value="3">Thin</option><option value="4" selected>Medium</option><option value="7">Thick</option>
+    </select>
+    <span style="width:10px"></span>
+    <button onclick="mkFinishLine()" class="mk-tb">&#10003; Finish line</button>
+    <button onclick="mkUndo()" class="mk-tb">&#8630; Undo</button>
+    <button onclick="mkClearPage()" class="mk-tb">Clear page</button>
+    <span id="mk-hint" style="font-size:10px;color:#90c8f0;margin-left:auto">Set the diameter, click along the pipe run, then Enter / double-click to finish</span>
+  </div>
+  <div id="mk-body" style="flex:1;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:16px">
+    <div id="mk-drop" style="margin:auto;border:2.5px dashed #4a7ba8;border-radius:14px;padding:60px 70px;text-align:center;color:#B5D4F4;cursor:pointer;background:rgba(255,255,255,.03)">
+      <div style="font-size:40px;margin-bottom:10px">&#128506;</div>
+      <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:6px">Drop a site plan PDF here</div>
+      <div style="font-size:12px">or click to browse &middot; multi-page plans supported</div>
+      <input type="file" id="mk-file" accept="application/pdf,.pdf" style="display:none" onchange="if(this.files[0])mkLoadFile(this.files[0])">
+    </div>
+    <div id="mk-stage" style="display:none;position:relative;box-shadow:0 6px 40px rgba(0,0,0,.5)">
+      <canvas id="mk-bg"></canvas>
+      <canvas id="mk-ov" style="position:absolute;left:0;top:0;cursor:crosshair"></canvas>
+    </div>
+  </div>`;
+  document.body.appendChild(m);
+  const drop=document.getElementById('mk-drop');
+  drop.onclick=()=>document.getElementById('mk-file').click();
+  drop.ondragover=(e)=>{e.preventDefault();drop.style.background='rgba(255,255,255,.1)';};
+  drop.ondragleave=()=>{drop.style.background='rgba(255,255,255,.03)';};
+  drop.ondrop=(e)=>{e.preventDefault();drop.style.background='rgba(255,255,255,.03)';const f=e.dataTransfer.files[0];if(f&&f.type==='application/pdf')mkLoadFile(f);else alert('Please drop a PDF file.');};
+  const body=document.getElementById('mk-body');
+  body.ondragover=(e)=>e.preventDefault();
+  body.ondrop=(e)=>{e.preventDefault();const f=e.dataTransfer.files&&e.dataTransfer.files[0];if(f&&f.type==='application/pdf')mkLoadFile(f);};
+  document.addEventListener('keydown',function esc(e){
+    const g=document.getElementById('mk-modal');
+    if(!g){document.removeEventListener('keydown',esc);return;}
+    if(e.key==='Escape'){if(MK.cur){MK.cur=null;mkDraw();}else{g.remove();document.removeEventListener('keydown',esc);}}
+    if(e.key==='Enter'&&MK.cur)mkFinishLine();
+  });
+  mkSetProd(0);mkSetMode('trace');
+}
+
+function mkLoadFile(file){
+  mkLoadPdfJs(()=>{
+    const reader=new FileReader();
+    reader.onload=()=>{
+      window.pdfjsLib.getDocument({data:reader.result}).promise.then(doc=>{
+        MK.doc=doc;MK.pages=doc.numPages;MK.page=1;MK.anns={};
+        document.getElementById('mk-drop').style.display='none';
+        document.getElementById('mk-stage').style.display='block';
+        document.getElementById('mk-tools').style.display='flex';
+        document.getElementById('mk-pagenav').style.display='flex';
+        mkRenderPage();
+      }).catch(e=>alert('Could not open that PDF: '+e.message));
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function mkRenderPage(){
+  MK.doc.getPage(MK.page).then(page=>{
+    const vp=page.getViewport({scale:MK.scale});
+    const bg=document.getElementById('mk-bg'),ov=document.getElementById('mk-ov');
+    const dpr=window.devicePixelRatio||1;
+    bg.width=vp.width*dpr;bg.height=vp.height*dpr;
+    bg.style.width=vp.width+'px';bg.style.height=vp.height+'px';
+    ov.width=vp.width*dpr;ov.height=vp.height*dpr;
+    ov.style.width=vp.width+'px';ov.style.height=vp.height+'px';
+    const ctx=bg.getContext('2d');
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    page.render({canvasContext:ctx,viewport:vp}).promise.then(()=>{mkBindOverlay();mkDraw();});
+    document.getElementById('mk-pageno').textContent='Page '+MK.page+' / '+MK.pages;
+  });
+}
+
+function mkBindOverlay(){
+  const ov=document.getElementById('mk-ov');
+  ov.onpointerdown=(e)=>{
+    const r=ov.getBoundingClientRect();
+    const x=(e.clientX-r.left)/MK.scale,y=(e.clientY-r.top)/MK.scale;
+    if(MK.mode==='trace'){
+      if(!MK.cur)MK.cur={type:'line',pts:[],color:MK_PRODUCTS[MK.prod].color,width:MK.width,prod:MK_PRODUCTS[MK.prod].name};
+      MK.cur.pts.push([x,y]);mkDraw();
+    } else if(MK.mode==='label'){
+      const txt=prompt('Callout text:',MK_PRODUCTS[MK.prod].name==='Note'?'':MK_PRODUCTS[MK.prod].name+' \u2014 ');
+      if(txt!==null&&txt.trim()){
+        mkAnns().push({type:'label',x,y,text:txt.trim(),color:MK_PRODUCTS[MK.prod].color});
+        mkDraw();
+      }
+    } else if(MK.mode==='fitting'){
+      mkAnns().push({type:'fitting',x,y,color:MK_PRODUCTS[MK.prod].color,text:'CES Fitting replacement for Junction Box'});
+      mkDraw();
+    }
+  };
+  ov.onpointermove=(e)=>{
+    if(MK.mode!=='trace'||!MK.cur)return;
+    const r=ov.getBoundingClientRect();
+    MK._hover=[(e.clientX-r.left)/MK.scale,(e.clientY-r.top)/MK.scale];
+    mkDraw();
+  };
+  ov.ondblclick=(e)=>{e.preventDefault();mkFinishLine();};
+}
+
+function mkAnns(){if(!MK.anns[MK.page])MK.anns[MK.page]=[];return MK.anns[MK.page];}
+
+function mkDiaValue(){
+  const inp=document.getElementById('mk-dia');
+  let dia=(inp&&inp.value||'').trim();
+  if(dia&&/^[\d.]+$/.test(dia))dia+='"'; // bare numbers get an inch mark
+  return dia;
+}
+function mkFinishLine(){
+  if(MK.cur&&MK.cur.pts.length>=2){
+    const line=MK.cur;
+    mkAnns().push(line);
+    const last=line.pts[line.pts.length-1];
+    if(line.prod!=='Note'){
+      // Diameter from the toolbar input box, shown in the same box as the product: 36" CMP
+      const dia=mkDiaValue();
+      line.dia=dia;
+      const text=dia?dia+' '+line.prod:line.prod;
+      mkAnns().push({type:'label',x:last[0]+8/MK.scale,y:last[1]-8/MK.scale,text:text,color:line.color});
+    }
+  }
+  MK.cur=null;MK._hover=null;mkDraw();
+}
+
+function mkUndo(){
+  if(MK.cur){MK.cur.pts.pop();if(!MK.cur.pts.length)MK.cur=null;mkDraw();return;}
+  mkAnns().pop();mkDraw();
+}
+function mkClearPage(){if(confirm('Clear all markups on this page?')){MK.anns[MK.page]=[];MK.cur=null;mkDraw();}}
+function mkGoPage(d){
+  if(MK.cur)mkFinishLine();
+  const n=MK.page+d;if(n<1||n>MK.pages)return;
+  MK.page=n;mkRenderPage();
+}
+function mkZoom(d){MK.scale=Math.min(3,Math.max(0.6,MK.scale+d));mkRenderPage();}
+function mkSetProd(i){
+  MK.prod=i;
+  MK_PRODUCTS.forEach((p,j)=>{
+    const b=document.getElementById('mk-p'+j);
+    if(b)b.style.outline=j===i?'2.5px solid #fff':'none';
+  });
+}
+function mkSetMode(mode){
+  MK.mode=mode;if(MK.cur)mkFinishLine();
+  const t=document.getElementById('mk-mtrace'),l=document.getElementById('mk-mlabel'),f=document.getElementById('mk-mfit');
+  if(t)t.style.background=mode==='trace'?'#2e7d4f':'';
+  if(l)l.style.background=mode==='label'?'#2e7d4f':'';
+  if(f)f.style.background=mode==='fitting'?'#2e7d4f':'';
+  const h=document.getElementById('mk-hint');
+  if(h)h.textContent=mode==='trace'?'Set the diameter, click along the pipe run, then Enter / double-click to finish \u2014 the callout shows product + diameter'
+    :mode==='label'?'Click on the plan to place a product callout'
+    :'Click where a CES fitting replaces a junction box \u2014 a circle marker with callout is placed';
+}
+
+function mkDrawAnnsTo(ctx,scale,anns,cur,hover){
+  const all=cur?anns.concat([cur]):anns;
+  all.forEach(a=>{
+    if(a.type==='line'&&a.pts.length){
+      ctx.strokeStyle=a.color;ctx.lineWidth=a.width*scale;ctx.lineJoin='round';ctx.lineCap='round';
+      ctx.beginPath();
+      ctx.moveTo(a.pts[0][0]*scale,a.pts[0][1]*scale);
+      for(let i=1;i<a.pts.length;i++)ctx.lineTo(a.pts[i][0]*scale,a.pts[i][1]*scale);
+      if(a===cur&&hover)ctx.lineTo(hover[0]*scale,hover[1]*scale);
+      ctx.stroke();
+      // endpoint dots
+      a.pts.forEach(p=>{ctx.fillStyle=a.color;ctx.beginPath();ctx.arc(p[0]*scale,p[1]*scale,(a.width*scale)/1.6,0,7);ctx.fill();});
+    } else if(a.type==='fitting'){
+      const cx=a.x*scale,cy=a.y*scale,r=11*scale;
+      // circle marker
+      ctx.fillStyle='rgba(255,255,255,.85)';ctx.strokeStyle=a.color;ctx.lineWidth=3*scale;
+      ctx.beginPath();ctx.arc(cx,cy,r,0,7);ctx.fill();ctx.stroke();
+      ctx.fillStyle=a.color;ctx.beginPath();ctx.arc(cx,cy,3*scale,0,7);ctx.fill();
+      // leader to callout
+      const lx=cx+r+22*scale, ly=cy-r-14*scale;
+      ctx.strokeStyle=a.color;ctx.lineWidth=1.4*scale;
+      ctx.beginPath();ctx.moveTo(cx+r*0.72,cy-r*0.72);ctx.lineTo(lx,ly);ctx.stroke();
+      // callout box
+      ctx.font='bold '+(12*scale)+'px Arial';
+      const tw=ctx.measureText(a.text).width+14*scale, th=21*scale;
+      ctx.fillStyle='#fff';ctx.strokeStyle=a.color;ctx.lineWidth=1.6*scale;
+      ctx.beginPath();
+      if(ctx.roundRect)ctx.roundRect(lx,ly-th,tw,th,4*scale);else ctx.rect(lx,ly-th,tw,th);
+      ctx.fill();ctx.stroke();
+      ctx.fillStyle=a.color;
+      ctx.fillText(a.text,lx+7*scale,ly-6*scale);
+    } else if(a.type==='label'){
+      const sub=a.sub||'';
+      ctx.font='bold '+(13*scale)+'px Arial';
+      const wMain=ctx.measureText(a.text).width;
+      let wSub=0;
+      if(sub){ctx.font='bold '+(12*scale)+'px Arial';wSub=ctx.measureText(sub).width;}
+      const w=Math.max(wMain,wSub)+14*scale, h=(sub?38:22)*scale;
+      const x=a.x*scale,y=a.y*scale;
+      ctx.fillStyle='#fff';ctx.strokeStyle=a.color;ctx.lineWidth=1.6*scale;
+      ctx.beginPath();
+      if(ctx.roundRect)ctx.roundRect(x,y-h,w,h,4*scale);else ctx.rect(x,y-h,w,h);
+      ctx.fill();ctx.stroke();
+      ctx.fillStyle=a.color;
+      if(sub){
+        ctx.font='bold '+(13*scale)+'px Arial';
+        ctx.fillText(a.text,x+7*scale,y-h+16*scale);
+        ctx.font='bold '+(12*scale)+'px Arial';
+        ctx.fillText(sub,x+7*scale,y-7*scale);
+      } else {
+        ctx.fillText(a.text,x+7*scale,y-6.5*scale);
+      }
+      ctx.beginPath();ctx.arc(x,y,3*scale,0,7);ctx.fillStyle=a.color;ctx.fill();
+    }
+  });
+}
+
+function mkDraw(){
+  const ov=document.getElementById('mk-ov');if(!ov)return;
+  const dpr=window.devicePixelRatio||1;
+  const ctx=ov.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,ov.width,ov.height);
+  mkDrawAnnsTo(ctx,MK.scale,mkAnns(),MK.cur,MK._hover);
+}
+
+function mkExport(){
+  if(!MK.doc){alert('Load a site plan PDF first.');return;}
+  if(MK.cur)mkFinishLine();
+  const pages=Object.keys(MK.anns).filter(p=>MK.anns[p]&&MK.anns[p].length).map(Number).sort((a,b)=>a-b);
+  const list=pages.length?pages:[MK.page];
+  const EXPORT_SCALE=2;
+  const imgs=[];
+  let done=0;
+  list.forEach((pn,idx)=>{
+    MK.doc.getPage(pn).then(page=>{
+      const vp=page.getViewport({scale:EXPORT_SCALE});
+      const cv=document.createElement('canvas');
+      cv.width=vp.width;cv.height=vp.height;
+      const ctx=cv.getContext('2d');
+      ctx.fillStyle='#fff';ctx.fillRect(0,0,cv.width,cv.height);
+      page.render({canvasContext:ctx,viewport:vp}).promise.then(()=>{
+        mkDrawAnnsTo(ctx,EXPORT_SCALE,MK.anns[pn]||[],null,null);
+        imgs[idx]={pn,url:cv.toDataURL('image/png'),landscape:vp.width>vp.height};
+        done++;
+        if(done===list.length){
+          const pagesHtml=imgs.map(o=>`<div style="page-break-after:always;text-align:center"><img src="${o.url}" style="max-width:100%;max-height:96vh"></div>`).join('');
+          const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Site Plan Markup</title>
+          <style>@page{size:letter ${imgs[0].landscape?'landscape':'portrait'};margin:.35in}body{font-family:Arial;margin:0}
+          @media print{button{display:none!important}}</style></head><body>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 4px;font-size:11px;color:#555">
+            <span><b style="color:#0A3A64">Contech Total Install Compare</b> \u2014 Site Plan Markup</span>
+            <span>${new Date().toLocaleDateString('en-US')}</span>
+          </div>
+          ${pagesHtml}
+          <div style="text-align:center;margin:14px"><button onclick="window.print()" style="padding:9px 26px;background:#1a4a7a;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer">Print / Save as PDF</button></div>
+          </body></html>`;
+          openInNewTab(html,'Site Plan Markup');
+        }
+      });
+    });
+  });
+}
+
 function userGuide(){
   const ex=document.getElementById('guide-modal');if(ex){ex.remove();return;}
   const m=document.createElement('div');
@@ -559,6 +876,10 @@ function whatsNewContent(){
   return `<div class="g-wrap">
   <div class="g-hdr"><img src="${CONTECH_LOGO}" alt="Contech"><div class="g-h1">What&rsquo;s New &mdash; Feature Updates</div></div>
   <div class="g-sub">Value-add capabilities recently added to the Total Install Compare tool, newest first.</div>
+
+  ${rel('July 15, 2026',[
+    ['Site Plan Markup','Drop in a site plan PDF and trace drainage runs directly on it \u2014 color-coded by Contech product \u2014 then drop callout labels and print or save the marked-up plan as a PDF. Launch it from the start screen or the summary page.'],
+  ])}
 
   ${rel('July 14, 2026',[
     ['Spoils &amp; haul-off planning','Plan excess-material takeoff by product. Swell factor converts bank CY to loose CY; price it by truckload (capacity + $/load) or by cubic yard with a one-click toggle. Haul cost flows into project totals, the summary breakdown, and the trench cost cards \u2014 native vs. imported backfill logic determines how much soil leaves the site.'],
@@ -720,6 +1041,10 @@ function savedListHtml(){
     <button onclick="whatsNew()" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:#2e7d4f;color:#fff;border:none;border-radius:var(--border-radius-md);font-size:11px;font-weight:600;cursor:pointer">
       <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1l1.2 3.1L10.5 5 7.6 6.6 7 10 5.2 7.2 2 6.8l2.4-2.2L4 1.5z" stroke="#fff" stroke-width="1" stroke-linejoin="round"/></svg>
       What&rsquo;s New
+    </button>
+    <button onclick="openMarkup()" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:#b05a10;color:#fff;border:none;border-radius:var(--border-radius-md);font-size:11px;font-weight:600;cursor:pointer">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 11l1-3.5L8.5 1 11 3.5 4.5 10 1 11z" stroke="#fff" stroke-width="1.1" stroke-linejoin="round"/><path d="M7.5 2l2.5 2.5" stroke="#fff" stroke-width="1.1"/></svg>
+      Site Plan Markup
     </button>
   </div>`;
   if(!saves.length)return `<div class="card ac" style="margin-bottom:.75rem">${fileRow}</div>`;
@@ -2820,6 +3145,10 @@ function calculate(){
       <button class="btn-pdf" style="background:#2d6e3e;border-color:#2d6e3e" onclick="exportContractorForm()">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1.5" y="1" width="11" height="12" rx="1.5" stroke="#fff" stroke-width="1.2"/><path d="M4 4h6M4 6.5h6M4 9h3M9 8.5l2 2-2 2" stroke="#fff" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Export Contractor Form
+      </button>
+      <button class="btn-pdf" style="background:#b05a10;border-color:#b05a10" onclick="openMarkup()">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1.5 12.5l1.2-4L10 1.2l2.8 2.8L5.5 11.3l-4 1.2z" stroke="#fff" stroke-width="1.2" stroke-linejoin="round"/><path d="M8.8 2.4l2.8 2.8" stroke="#fff" stroke-width="1.2"/></svg>
+        Markup Site Plan
       </button>
       <button class="btn-pdf" style="background:#3d3d3d;border-color:#3d3d3d" onclick="showInternalCompare()">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7s2.2-4 6-4 6 4 6 4-2.2 4-6 4-6-4-6-4z" stroke="#fff" stroke-width="1.2" stroke-linejoin="round"/><circle cx="7" cy="7" r="1.8" stroke="#fff" stroke-width="1.2"/></svg>
