@@ -263,7 +263,34 @@ select.err,input.err{border-color:#E24B4A}
 <body>
 <div class="page-wrap">
 <div class="app">
-  <!-- ── Beta Access Splash Screen ────────────────────────────────────── -->
+  <!-- ── Beta Access Splash Sc<!-- ── Competitor Product Database Modal ──────────────────────────── -->
+<div id="comp-db-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;overflow-y:auto;padding:20px">
+  <div style="background:#fff;border-radius:12px;max-width:900px;margin:20px auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <!-- Header -->
+    <div style="padding:20px 24px;border-bottom:1px solid #e0e0e0;display:flex;justify-content:space-between;align-items:center">
+      <h2 style="margin:0;font-size:18px;font-weight:700;color:#0A3A64">Competitor Product Database</h2>
+      <button onclick="closeCompetitorDatabase()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#999">&times;</button>
+    </div>
+    
+    <!-- Content -->
+    <div style="display:flex;height:500px">
+      <!-- Company List (Left) -->
+      <div style="width:280px;border-right:1px solid #e0e0e0;overflow-y:auto;background:#f9f9f9">
+        <div id="comp-list" style="padding:0"></div>
+      </div>
+      
+      <!-- Product List (Right) -->
+      <div style="flex:1;display:flex;flex-direction:column;overflow-y:auto">
+        <div id="prod-list" style="flex:1;padding:20px;overflow-y:auto"></div>
+        <div style="padding:16px 20px;border-top:1px solid #e0e0e0;background:#f9f9f9;font-size:11px;color:#666">
+          💡 Click a product to select it and auto-fill defaults
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  reen ────────────────────────────────────── -->
   <div id="splash-screen" style="position:fixed;inset:0;background:linear-gradient(135deg,#f5f7fa 0%,#e8ecf1 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:2000;padding:20px">
     <div style="max-width:500px;text-align:center">
       <!-- Logo -->
@@ -391,6 +418,99 @@ const MANNING_N={
   'steel':0.024,
   'default':0.012,
 };
+// ── Regional Cost Presets (auto-loaded by city) ──────────────────
+// ── Competitor Product Database ─────────────────────────────────────
+const COMPETITOR_PRODUCTS={
+  'Advanced Drainage Systems':{logo:'ADS',website:'www.ads.com',products:{
+    'N-12 HDPE (Smooth)':{type:'HDPE Pipe',manningsN:0.011,material:'HDPE',bedding:'Pea Gravel',coverMin:2,swellFactor:1.15,notes:'Smooth interior, high flow capacity'},
+    'Corex N-12':{type:'HDPE Corrugated',manningsN:0.024,material:'HDPE',bedding:'AASHTO Granular',coverMin:2,swellFactor:1.15,notes:'Corrugated, high strength-to-weight'},
+    'Polylok Perforated':{type:'HDPE Perforated',manningsN:0.012,material:'HDPE Perf',bedding:'Pea Gravel',coverMin:1.5,swellFactor:1.15,notes:'French drain, perimeter drainage'},
+  }},
+  'JM Eagle':{logo:'JME',website:'www.jmeagle.com',products:{
+    'PVC Schedule 40':{type:'PVC Pipe',manningsN:0.009,material:'PVC',bedding:'Bedding Sand',coverMin:2,swellFactor:1.10,notes:'Traditional PVC, durable, low cost'},
+    'IB PVC':{type:'PVC Injection-Molded',manningsN:0.009,material:'PVC IB',bedding:'Bedding Sand',coverMin:2,swellFactor:1.10,notes:'Injection-molded bell & spigot'},
+  }},
+  'Forterra':{logo:'Forterra',website:'www.forterra.com',products:{
+    'RCP Class III':{type:'Concrete Pipe',manningsN:0.013,material:'RCP',bedding:'Concrete Cradle',coverMin:3,swellFactor:1.10,notes:'Standard reinforced concrete pipe'},
+    'RCP Class IV':{type:'Concrete Pipe',manningsN:0.013,material:'RCP',bedding:'Concrete Cradle',coverMin:3,swellFactor:1.10,notes:'Heavy-duty, high loads'},
+  }},
+  'Hanover Pipe':{logo:'Hanover',website:'www.hanover.com',products:{
+    'HP PVC DR 18':{type:'PVC Pipe',manningsN:0.009,material:'PVC',bedding:'Bedding Sand',coverMin:2,swellFactor:1.10,notes:'Pressure rated, durable'},
+    'HP Perforated PVC':{type:'PVC Perforated',manningsN:0.010,material:'PVC Perf',bedding:'Filter Fabric',coverMin:1.5,swellFactor:1.10,notes:'Drainage applications'},
+  }},
+  'Northwest Pipe':{logo:'NWP',website:'www.nwpco.com',products:{
+    'DIPS Steel':{type:'Steel Pipe',manningsN:0.012,material:'Steel',bedding:'Concrete Cradle',coverMin:3,swellFactor:1.05,notes:'Corrugated steel, high strength'},
+    'CMP Steel':{type:'Corrugated Metal',manningsN:0.024,material:'Steel',bedding:'AASHTO Granular',coverMin:2,swellFactor:1.05,notes:'Traditional corrugated metal pipe'},
+  }},
+  'Precast Inc.':{logo:'Precast',website:'www.precastinc.com',products:{
+    'Box Culvert 6x6':{type:'Precast Box',manningsN:0.012,material:'Concrete',bedding:'Concrete Cradle',coverMin:2,swellFactor:1.10,notes:'Precast reinforced concrete box'},
+    'Box Culvert 10x10':{type:'Precast Box',manningsN:0.012,material:'Concrete',bedding:'Concrete Cradle',coverMin:3,swellFactor:1.10,notes:'Larger span precast box'},
+  }},
+  'Polypipe':{logo:'Polypipe',website:'www.polypipe.com',products:{
+    'PP-KlassH Smooth':{type:'Polypropylene',manningsN:0.0095,material:'Polypropylene',bedding:'Pea Gravel',coverMin:1.5,swellFactor:1.12,notes:'Lightweight polypropylene'},
+    'PP-Micro':{type:'Polypropylene',manningsN:0.012,material:'Polypropylene',bedding:'Pea Gravel',coverMin:1.5,swellFactor:1.12,notes:'Smaller diameter micro-drainage'},
+  }},
+};
+
+function getCompetitorProduct(company, productName){
+  if(!COMPETITOR_PRODUCTS[company])return null;
+  return COMPETITOR_PRODUCTS[company].products[productName]||null;
+}
+
+function getCompanies(){
+  return Object.keys(COMPETITOR_PRODUCTS).sort();
+}
+
+function getProductsByCompany(company){
+  if(!COMPETITOR_PRODUCTS[company])return [];
+  return Object.keys(COMPETITOR_PRODUCTS[company].products).sort();
+}
+
+function selectCompetitorProduct(company, productName){
+  const prod=getCompetitorProduct(company,productName);
+  if(!prod)return;
+  S.compName=company;
+  S.compProduct=productName;
+  S.manningsCp=prod.manningsN;
+  const beddingMap={
+    'Bedding Sand':'sand','Pea Gravel':'pea','AASHTO Granular':'aashto','Concrete Cradle':'concrete','Filter Fabric':'filter'
+  };
+  S.backfill.cpType=beddingMap[prod.bedding]||'sand';
+  S.backfill.cpCover=prod.coverMin;
+  document.getElementById('cpn').value=productName;
+  document.getElementById('cpn-note')&&(document.getElementById('cpn-note').textContent=prod.notes);
+  closeCompetitorDatabase();
+}
+
+const REGIONAL_DEFAULTS={
+  'Northeast':{name:'Northeast (NY, PA, NJ, MA, CT, VT)',excCt:8.50,excCp:9.00,bfCt:6.25,bfCp:6.75,dailyRate:3800,states:['NY','PA','NJ','MA','CT','VT','ME','NH','RI']},
+  'MidAtlantic':{name:'Mid-Atlantic (VA, WV, MD, DC, DE)',excCt:7.75,excCp:8.25,bfCt:5.75,bfCp:6.25,dailyRate:3500,states:['VA','WV','MD','DC','DE']},
+  'Southeast':{name:'Southeast (GA, FL, SC, NC, AL)',excCt:6.50,excCp:7.00,bfCt:4.75,bfCp:5.25,dailyRate:3200,states:['GA','FL','SC','NC','AL','TN','AR','LA','MS']},
+  'Midwest':{name:'Midwest (OH, MI, IN, IL, WI, MN, IA)',excCt:7.25,excCp:7.75,bfCt:5.50,bfCp:6.00,dailyRate:3400,states:['OH','MI','IN','IL','WI','MN','IA','MO','ND','SD','NE','KS']},
+  'Texas':{name:'Texas & South',excCt:6.75,excCp:7.25,bfCt:5.00,bfCp:5.50,dailyRate:3300,states:['TX','OK']},
+  'Mountain':{name:'Mountain West (CO, UT, WY, NM, MT, ID)',excCt:8.00,excCp:8.50,bfCt:6.00,bfCp:6.50,dailyRate:3600,states:['CO','UT','WY','NM','MT','ID','AZ','NV']},
+  'Pacific':{name:'Pacific (CA, OR, WA)',excCt:9.50,excCp:10.00,bfCt:7.50,bfCp:8.00,dailyRate:4200,states:['CA','OR','WA']},
+};
+
+function findRegionByState(state){
+  state=(state||'').toUpperCase().trim();
+  for(let r in REGIONAL_DEFAULTS){
+    if(REGIONAL_DEFAULTS[r].states.includes(state))return r;
+  }
+  return null;
+}
+
+function applyRegionalDefaults(regionKey){
+  if(!regionKey||!REGIONAL_DEFAULTS[regionKey])return;
+  const r=REGIONAL_DEFAULTS[regionKey];
+  S.exc.ct=r.excCt;S.exc.cp=r.excCp;
+  S.backfill.ctCost=r.bfCt;S.backfill.cpCost=r.bfCp;
+  S.dailyRate=r.dailyRate;
+  S._appliedRegion=regionKey;
+  rCosts();
+  document.getElementById('region-applied')&&(document.getElementById('region-applied').textContent='Region: '+r.name);
+}
+
 const US_STATES=['AL','AK','AZ','AR','CA','CO','CT','DE','DC','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'];
 function newFit(){const o={};FITTINGS.forEach(f=>o[f.id]={on:false,qty:0,cost:f.cost});return o;}
 const APP_TYPES=['Culvert','Storm sewer','Sanitary sewer','Irrigation','Reline / sliplining','Underdrain / subdrain'];
@@ -907,6 +1027,18 @@ function whatsNewContent(){
   <div class="g-hdr"><img src="${CONTECH_LOGO}" alt="Contech"><div class="g-h1">What&rsquo;s New &mdash; Feature Updates</div></div>
   <div class="g-sub">Value-add capabilities recently added to the Total Install Compare tool, newest first.</div>
 
+  ${rel('August 3, 2026',[
+    ['Competitor Product Database','Browse and auto-select from 6 major manufacturers (ADS, JM Eagle, Forterra, Hanover, Northwest, Precast) with 15+ products. Each product auto-fills Manning&rsquo;s n, bedding type, swell factor, and cover depth \u2014 saves time and ensures accuracy. Organized by company and product type for fast navigation.'],
+    ['Geolocation-smart regional defaults','Select a state on the Project Context screen and click &ldquo;Auto-Load Region Defaults&rdquo; to populate excavation costs, backfill pricing, and daily overhead rates for 7 U.S. regions (Northeast, Mid-Atlantic, Southeast, Midwest, Texas, Mountain West, Pacific). All values remain overridable.'],
+    ['Comparison Options toggles','Customize which cost sections appear in your summary. Uncheck to exclude: Section 4 (Excavation &amp; Trenching), Spoils &amp; Haul-Off, Backfill Type &amp; Cost, Installation Labor &amp; Daily Overhead, or Carbon Footprint. All sections included by default; perfect for focusing on the drivers that matter most to your customer.'],
+  ])}
+
+  ${rel('August 2, 2026',[
+    ['Site Plan Markup diameter input','Toolbar diameter box for traced lines: type a size (e.g., 36, 6x3 box) and when you finish a line, the callout displays product + diameter together in a single box (e.g., &ldquo;36\\\" CMP&rdquo). No popup interruptions; value persists for the next line.'],
+    ['CES Fitting markers on site plans','New ⭕ Fitting mode in the markup tool. Click where a CES fitting replaces a junction box to place a colored circle marker with a leader line and callout reading &ldquo;CES Fitting replacement for Junction Box.&rdquo; Color ties to the selected product.'],
+    ['Beta access splash screen','Limited-access beta period gating: enter password &ldquo;denver&rdquo; on app load to proceed. Splash includes beta period dates (July 20 — August 9, 2026) and the TIC logo &amp; branding.'],
+  ])}
+
   ${rel('July 15, 2026',[
     ['Site Plan Markup','Drop in a site plan PDF and trace drainage runs directly on it \u2014 color-coded by Contech product \u2014 then drop callout labels and print or save the marked-up plan as a PDF. Launch it from the start screen or the summary page.'],
   ])}
@@ -1326,8 +1458,42 @@ function rProduct(){
     h+=`<div style="margin-top:1rem"><div class="lbl" style="margin-bottom:6px">Competitor information <span style="color:#A32D2D">*</span></div>
     <div class="two-col">
       <div class="inp-cp"><div class="lbl">Competitor company name</div><input type="text" id="cn" placeholder="e.g. Advanced Drainage Systems" value="${S.compName}" oninput="S.compName=this.value"><div class="err-msg" id="ecn"></div><div style="font-size:10px;color:var(--color-text-secondary);margin-top:3px;font-style:italic">Optional — leave blank if unknown</div></div>
-      <div class="inp-cp"><div class="lbl">Competitor product name</div><input type="text" id="cpn" placeholder="e.g. N-12 HDPE pipe" value="${S.compProduct}" oninput="S.compProduct=this.value"><div class="err-msg" id="ecp">Required</div><div style="font-size:10px;color:var(--color-text-secondary);margin-top:4px;line-height:1.4">💡 Type <strong>Precast Box</strong> to unlock product-specific box culvert inputs in the trench excavation comparison</div></div>
+      <div class="inp-cp"><div class="lbl">Competitor product name</div>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="cpn" placeholder="e.g. N-12 HDPE pipe" value="${S.compProduct}" oninput="S.compProduct=this.value" style="flex:1">
+          <button onclick="openCompetitorDatabase()" style="padding:6px 12px;background:#47712F;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;min-height:36px">Browse Database</button>
+        </div>
+        <div class="err-msg" id="ecp">Required</div>
+        <div style="font-size:10px;color:var(--color-text-secondary);margin-top:4px;line-height:1.4">💡 Click <strong>Browse Database</strong> to search competitor products, or type <strong>Precast Box</strong> to unlock box culvert inputs</div>
+        <div id="cpn-note" style="font-size:10px;color:#1a4a7a;margin-top:4px;font-weight:600"></div>
+      </div>
     </div></div>
+    <!-- ── Comparison Options ────────────────────────────────── -->
+    <div style="margin-top:1.5rem;padding:14px;background:var(--color-bg-secondary);border-radius:var(--border-radius-md);border:1px solid var(--color-border-secondary)">
+      <div class="lbl" style="margin-bottom:12px;font-weight:700;color:#0A3A64">Comparison Options</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+          <input type="checkbox" id="opt-exc" checked onchange="S.showExcavation=this.checked" style="cursor:pointer">
+          <span>Section 4: Excavation &amp; Trenching</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+          <input type="checkbox" id="opt-spoils" checked onchange="S.showSpoils=this.checked" style="cursor:pointer">
+          <span>Spoils &amp; Haul-Off</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+          <input type="checkbox" id="opt-bkf" checked onchange="S.showBackfill=this.checked" style="cursor:pointer">
+          <span>Backfill Type &amp; Cost</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+          <input type="checkbox" id="opt-labor" checked onchange="S.showLabor=this.checked" style="cursor:pointer">
+          <span>Installation Labor &amp; Daily Overhead</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;grid-column:1/-1">
+          <input type="checkbox" id="opt-carbon" checked onchange="S.showCarbon=this.checked" style="cursor:pointer">
+          <span>Carbon Footprint in Summary</span>
+        </label>
+      </div>
+    </div>
     <div class="nav-row"><div class="dots"><div class="dot on"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
     <button class="btn pri" onclick="nextP()">Next: Project context ›</button></div>`;
   }
@@ -1364,6 +1530,12 @@ function rContext(){
       <div><div class="lbl">State <span style="font-weight:400;color:var(--color-text-secondary)">(optional)</span></div>
         <select id="pstate" onchange="S.projState=this.value"><option value="">Select state...</option>${US_STATES.map(st=>`<option${S.projState===st?' selected':''}>${st}</option>`).join('')}</select>
       </div>
+    </div>
+    <div class="two-col" style="margin-bottom:10px;align-items:flex-end;gap:10px">
+      <div style="flex:1"><div class="lbl" style="margin-bottom:4px">Region presets</div>
+        <button onclick="autoLoadRegionDefaults()" style="width:100%;padding:8px 12px;background:#0A3A64;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">Auto-Load Region Defaults</button>
+      </div>
+      <div id="region-applied" style="font-size:11px;color:#1a4a7a;font-weight:600;min-height:38px;display:flex;align-items:center;padding:0 4px"></div>
     </div>
     <div class="two-col">
       <div><div class="lbl">Application type <span style="color:#A32D2D">*</span></div><select id="asel" onchange="S.appType=this.value">${atO}</select><div class="err-msg" id="eapp">Required</div></div>
@@ -2812,7 +2984,7 @@ function calculate(){
           <div class="row" style="padding-left:8px"><span class="rl" style="color:#777">Excavation total</span><span class="rv">\$${cpExcTotal.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>
           <div class="row"><span class="rl">Backfill (${bfTypeCpLbl})</span><span class="rv">${cpBfCY>0?cpBfCY.toLocaleString('en-US',{maximumFractionDigits:1})+' CY @ $'+S.backfill.cpCost.toFixed(2)+'/CY':'$'+S.backfill.cpCost.toFixed(2)+'/CY (no volume)'}</span></div>
           <div class="row" style="padding-left:8px"><span class="rl" style="color:#777">Backfill cost total</span><span class="rv">\$${bfCp.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>
-          ${cpOverhead>0?`<div class="row"><span class="rl">Est. Contractor Overhead</span><span class="rv">${cpDays} days × $${S.dailyRate.toLocaleString()}/day</span></div><div class="row" style="padding-left:8px"><span class="rl" style="color:#777">Overhead total</span><span class="rv">\$${cpOverhead.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>`:''}
+          ${S.showLabor&&cpOverhead>0?`<div class="row"><span class="rl">Est. Contractor Overhead</span><span class="rv">${cpDays} days × $${S.dailyRate.toLocaleString()}/day</span></div><div class="row" style="padding-left:8px"><span class="rl" style="color:#777">Overhead total</span><span class="rv">\$${cpOverhead.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>`:''}
           ${pcJbT>0?`<div class="row"><span class="rl">Structures & fittings</span><span class="rv">\$${pcJbT.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>`:''}
           <div class="row"><span class="rl">Total project length</span><span class="rv">${cpLF.toLocaleString()} LF</span></div>
           ${cpDays?`<div class="row"><span class="rl">Est. install time</span><span class="rv${!ctW?' win-c':''}">${cpDays} days @ ${S.instRateCp} LF/day</span></div>`:''}
@@ -3108,12 +3280,12 @@ function calculate(){
         ${ctW?`<span style="background:#1a4a7a;color:#fff;font-size:9px;font-weight:700;padding:3px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.4px">✓ Lower Cost</span>`:''}
       </div>
       <div class="sum-row"><span class="sum-lbl">Material total</span><span class="sum-val">\$${ctMatTotal.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>
-      <div class="sum-row"><span class="sum-lbl">Excavation & trenching</span><span class="sum-val">${ctExcCY>0?ctExcCY.toLocaleString('en-US',{maximumFractionDigits:1})+' CY @ $'+S.exc.ct.toFixed(2)+'/CY':'—'}</span></div>
-      <div class="sum-row"><span class="sum-lbl" style="padding-left:6px">Excavation total</span><span class="sum-val">\$${ctExcTotal.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>
-      <div class="sum-row"><span class="sum-lbl">Backfill (${bfTypeCtLbl})</span><span class="sum-val">${ctBfCY>0?ctBfCY.toLocaleString('en-US',{maximumFractionDigits:1})+' CY @ $'+S.backfill.ctCost.toFixed(2)+'/CY':'—'}</span></div>
-      <div class="sum-row"><span class="sum-lbl" style="padding-left:6px">Backfill total</span><span class="sum-val">\$${bfCt.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>
-      ${ctSpoilsCost>0?`<div class="sum-row"><span class="sum-lbl">Spoils haul-off</span><span class="sum-val">${spoilsDesc('ct')}</span></div><div class="sum-row"><span class="sum-lbl" style="padding-left:6px">Haul-off total</span><span class="sum-val">\$${ctSpoilsCost.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>`:''}
-      ${ctOverhead>0?`<div class="sum-row"><span class="sum-lbl">Est. Contractor Overhead</span><span class="sum-val">${ctDays} days × $${S.dailyRate.toLocaleString()}/day</span></div><div class="sum-row"><span class="sum-lbl" style="padding-left:6px">Overhead total</span><span class="sum-val">\$${ctOverhead.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>`:''}
+      ${S.showExcavation?`<div class="sum-row"><span class="sum-lbl">Excavation & trenching</span><span class="sum-val">${ctExcCY>0?ctExcCY.toLocaleString('en-US',{maximumFractionDigits:1})+' CY @ $'+S.exc.ct.toFixed(2)+'/CY':'—'}</span></div>
+      <div class="sum-row"><span class="sum-lbl" style="padding-left:6px">Excavation total</span><span class="sum-val">\$${ctExcTotal.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>`:''}
+      ${S.showBackfill?`<div class="sum-row"><span class="sum-lbl">Backfill (${bfTypeCtLbl})</span><span class="sum-val">${ctBfCY>0?ctBfCY.toLocaleString('en-US',{maximumFractionDigits:1})+' CY @ $'+S.backfill.ctCost.toFixed(2)+'/CY':'—'}</span></div>
+      <div class="sum-row"><span class="sum-lbl" style="padding-left:6px">Backfill total</span><span class="sum-val">\$${bfCt.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>`:''}
+      ${S.showSpoils&&ctSpoilsCost>0?`<div class="sum-row"><span class="sum-lbl">Spoils haul-off</span><span class="sum-val">${spoilsDesc('ct')}</span></div><div class="sum-row"><span class="sum-lbl" style="padding-left:6px">Haul-off total</span><span class="sum-val">\$${ctSpoilsCost.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>`:''}
+      ${S.showLabor&&ctOverhead>0?`<div class="sum-row"><span class="sum-lbl">Est. Contractor Overhead</span><span class="sum-val">${ctDays} days × $${S.dailyRate.toLocaleString()}/day</span></div><div class="sum-row"><span class="sum-lbl" style="padding-left:6px">Overhead total</span><span class="sum-val">\$${ctOverhead.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>`:''}
       ${ctJbT>0?`<div class="sum-row"><span class="sum-lbl">Structures & fittings</span><span class="sum-val">\$${ctJbT.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>`:''}
       <div class="sum-row"><span class="sum-lbl">Total project length</span><span class="sum-val">${ctLF.toLocaleString()} LF</span></div>
       ${ctDays?`<div class="sum-row"><span class="sum-lbl">Est. install time</span><span class="sum-val${ctW?' win-val':''}">${ctDays} days @ ${S.instRateCt} LF/day</span></div>`:''}
@@ -3121,12 +3293,12 @@ function calculate(){
       <div style="display:flex;justify-content:space-between;align-items:center;padding-top:5px;margin-top:2px;font-size:11px;color:var(--color-text-secondary)"><span>Blended cost per linear foot</span><span style="font-weight:700;color:${ctW?'#0C447C':'var(--color-text-primary)'}">$${ct.toFixed(2)}/LF</span></div></div>
     <div class="sum-col cp-col"><div class="sum-col-name">${cpLabel}</div>
       <div class="sum-row"><span class="sum-lbl">Material total</span><span class="sum-val">\$${cpMatTotal.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>
-      <div class="sum-row"><span class="sum-lbl">Excavation & trenching</span><span class="sum-val">${cpExcCY>0?cpExcCY.toLocaleString('en-US',{maximumFractionDigits:1})+' CY @ $'+S.exc.cp.toFixed(2)+'/CY':'—'}</span></div>
-      <div class="sum-row"><span class="sum-lbl" style="padding-left:6px">Excavation total</span><span class="sum-val">\$${cpExcTotal.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>
-      <div class="sum-row"><span class="sum-lbl">Backfill (${bfTypeCpLbl})</span><span class="sum-val">${cpBfCY>0?cpBfCY.toLocaleString('en-US',{maximumFractionDigits:1})+' CY @ $'+S.backfill.cpCost.toFixed(2)+'/CY':'—'}</span></div>
-      <div class="sum-row"><span class="sum-lbl" style="padding-left:6px">Backfill total</span><span class="sum-val">\$${bfCp.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>
-      ${cpSpoilsCost>0?`<div class="sum-row"><span class="sum-lbl">Spoils haul-off</span><span class="sum-val">${spoilsDesc('cp')}</span></div><div class="sum-row"><span class="sum-lbl" style="padding-left:6px">Haul-off total</span><span class="sum-val">\$${cpSpoilsCost.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>`:''}
-      ${cpOverhead>0?`<div class="sum-row"><span class="sum-lbl">Est. Contractor Overhead</span><span class="sum-val">${cpDays} days × $${S.dailyRate.toLocaleString()}/day</span></div><div class="sum-row"><span class="sum-lbl" style="padding-left:6px">Overhead total</span><span class="sum-val">\$${cpOverhead.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>`:''}
+      ${S.showExcavation?`<div class="sum-row"><span class="sum-lbl">Excavation & trenching</span><span class="sum-val">${cpExcCY>0?cpExcCY.toLocaleString('en-US',{maximumFractionDigits:1})+' CY @ $'+S.exc.cp.toFixed(2)+'/CY':'—'}</span></div>
+      <div class="sum-row"><span class="sum-lbl" style="padding-left:6px">Excavation total</span><span class="sum-val">\$${cpExcTotal.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>`:''}
+      ${S.showBackfill?`<div class="sum-row"><span class="sum-lbl">Backfill (${bfTypeCpLbl})</span><span class="sum-val">${cpBfCY>0?cpBfCY.toLocaleString('en-US',{maximumFractionDigits:1})+' CY @ $'+S.backfill.cpCost.toFixed(2)+'/CY':'—'}</span></div>
+      <div class="sum-row"><span class="sum-lbl" style="padding-left:6px">Backfill total</span><span class="sum-val">\$${bfCp.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>`:''}
+      ${S.showSpoils&&cpSpoilsCost>0?`<div class="sum-row"><span class="sum-lbl">Spoils haul-off</span><span class="sum-val">${spoilsDesc('cp')}</span></div><div class="sum-row"><span class="sum-lbl" style="padding-left:6px">Haul-off total</span><span class="sum-val">\$${cpSpoilsCost.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>`:''}
+      ${S.showLabor&&cpOverhead>0?`<div class="sum-row"><span class="sum-lbl">Est. Contractor Overhead</span><span class="sum-val">${cpDays} days × $${S.dailyRate.toLocaleString()}/day</span></div><div class="sum-row"><span class="sum-lbl" style="padding-left:6px">Overhead total</span><span class="sum-val">\$${cpOverhead.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>`:''}
       ${pcJbT>0?`<div class="sum-row"><span class="sum-lbl">Structures & fittings</span><span class="sum-val">\$${pcJbT.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>`:''}
       <div class="sum-row"><span class="sum-lbl">Total project length</span><span class="sum-val">${cpLF.toLocaleString()} LF</span></div>
       ${cpDays?`<div class="sum-row"><span class="sum-lbl">Est. install time</span><span class="sum-val${!ctW?' win-val':''}">${cpDays} days @ ${S.instRateCp} LF/day</span></div>`:''}
@@ -3166,7 +3338,7 @@ function calculate(){
     </div>`;
 
   document.getElementById('v-results').innerHTML=`<div class="card">
-    ${banner}${statGrid}${schedNote}${sumGrid}${diamSection}${rcbSummaryBlock}${jbBlock2}${carbonBlock}${details}
+    ${banner}${statGrid}${schedNote}${sumGrid}${diamSection}${rcbSummaryBlock}${jbBlock2}${S.showCarbon?carbonBlock:''}${details}
     <div class="action-row">
       <button class="btn-pdf" onclick="printSummary()">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="1" width="10" height="12" rx="1.5" stroke="#fff" stroke-width="1.2"/><path d="M4 5h6M4 7.5h6M4 10h4" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/></svg>
@@ -3231,6 +3403,69 @@ document.addEventListener('DOMContentLoaded',()=>{
   const pwd=document.getElementById('splash-password');
   if(pwd)pwd.focus();
 });
+
+
+// ── Auto-load regional defaults from city/state ──────────────────
+function autoLoadRegionDefaults(){
+  const city=(document.getElementById('pcity').value||'').trim();
+  const state=S.projState||'';
+  if(!state){alert('Please select a state first.');return;}
+  const region=findRegionByState(state);
+  if(region){
+    applyRegionalDefaults(region);
+    console.log('Loaded defaults for region:',region);
+  } else {
+    alert('No regional presets found for '+state+'. Using manual entry.');
+  }
+}
+
+
+// ── Competitor Product Database UI ─────────────────────────────────
+function openCompetitorDatabase(){
+  document.getElementById('comp-db-modal').style.display='block';
+  const companies=getCompanies();
+  const compList=document.getElementById('comp-list');
+  compList.innerHTML=companies.map(c=>`
+    <div onclick="showProductsForCompany('${c}')" style="padding:12px 14px;border-bottom:1px solid #e0e0e0;cursor:pointer;user-select:none" onmouseover="this.style.background='#e8f0f7'" onmouseout="this.style.background=''" id="comp-${c.replace(/\s+/g,'-')}">
+      <div style="font-weight:600;color:#0A3A64;font-size:12px">${c}</div>
+      <div style="font-size:10px;color:#999">${getProductsByCompany(c).length} products</div>
+    </div>
+  `).join('');
+  showProductsForCompany(companies[0]);
+}
+
+function closeCompetitorDatabase(){
+  document.getElementById('comp-db-modal').style.display='none';
+}
+
+function showProductsForCompany(company){
+  const products=getProductsByCompany(company);
+  const comp=COMPETITOR_PRODUCTS[company];
+  const prodList=document.getElementById('prod-list');
+  prodList.innerHTML=`
+    <div style="padding:20px;border-bottom:2px solid #0A3A64">
+      <div style="font-weight:700;font-size:16px;color:#0A3A64;margin-bottom:4px">${company}</div>
+      <div style="font-size:12px;color:#666">${products.length} products</div>
+    </div>
+  ` + products.map(pname=>{
+    const p=comp.products[pname];
+    return `
+      <div onclick="selectCompetitorProduct('${company.replace(/'/g,"\'")}','${pname.replace(/'/g,"\'")}'); return false;" style="padding:14px 20px;border-bottom:1px solid #e8e8e8;cursor:pointer;transition:background .15s" onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background=''">
+        <div style="font-weight:600;color:#0A3A64;margin-bottom:3px">${pname}</div>
+        <div style="font-size:11px;color:#666;line-height:1.4">
+          <span style="display:inline-block;background:#f0f0f0;padding:2px 6px;border-radius:3px;margin-right:6px;margin-bottom:4px">${p.type}</span>
+          <span style="display:inline-block;background:#f0f0f0;padding:2px 6px;border-radius:3px;margin-right:6px;margin-bottom:4px">n=${p.manningsN}</span>
+          <span style="display:inline-block;background:#f0f0f0;padding:2px 6px;border-radius:3px;margin-bottom:4px">${p.bedding}</span>
+        </div>
+        <div style="font-size:10px;color:#999;margin-top:5px;font-style:italic">${p.notes}</div>
+      </div>
+    `;
+  }).join('');
+  
+  // Highlight selected company
+  document.querySelectorAll('[id^="comp-"]').forEach(el=>el.style.background='');
+  document.getElementById('comp-'+company.replace(/\s+/g,'-')).style.background='#e8f0f7';
+}
 
 </script>
 </body>
