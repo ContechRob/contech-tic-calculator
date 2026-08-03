@@ -421,34 +421,97 @@ const MANNING_N={
 // ── Regional Cost Presets (auto-loaded by city) ──────────────────
 // ── Competitor Product Database ─────────────────────────────────────
 const COMPETITOR_PRODUCTS={
-  'Advanced Drainage Systems':{logo:'ADS',website:'www.ads.com',products:{
-    'N-12 HDPE (Smooth)':{type:'HDPE Pipe',manningsN:0.011,material:'HDPE',bedding:'Pea Gravel',coverMin:2,swellFactor:1.15,notes:'Smooth interior, high flow capacity'},
-    'Corex N-12':{type:'HDPE Corrugated',manningsN:0.024,material:'HDPE',bedding:'AASHTO Granular',coverMin:2,swellFactor:1.15,notes:'Corrugated, high strength-to-weight'},
-    'Polylok Perforated':{type:'HDPE Perforated',manningsN:0.012,material:'HDPE Perf',bedding:'Pea Gravel',coverMin:1.5,swellFactor:1.15,notes:'French drain, perimeter drainage'},
+  'Advanced Drainage Systems (ADS)':{logo:'ADS',website:'www.ads.com',products:{
+    'N-12 HDPE Smooth':{type:'HDPE Pipe',manningsN:0.011,material:'HDPE',bedding:'Pea Gravel',coverMin:2,swellFactor:1.15,notes:'High-flow smooth interior, lightweight'},
+    'Corex N-12 Corrugated':{type:'HDPE Corrugated',manningsN:0.024,material:'HDPE',bedding:'AASHTO Granular',coverMin:2,swellFactor:1.15,notes:'Strength-to-weight advantage'},
+    'Polylok Perforated':{type:'HDPE Perforated',manningsN:0.012,material:'HDPE Perf',bedding:'Pea Gravel',coverMin:1.5,swellFactor:1.15,notes:'Drainage and edge drains'},
+    'ADS AIR-GAP':{type:'HDPE Corrugated w/ Liner',manningsN:0.012,material:'HDPE',bedding:'Pea Gravel',coverMin:2,swellFactor:1.15,notes:'Air-gap construction for roots'},
+  }},
+  'Oldcastle Materials':{logo:'Oldcastle',website:'www.oldcastle.com',products:{
+    'RCP Class III':{type:'Concrete Pipe',manningsN:0.013,material:'RCP',bedding:'Concrete Cradle',coverMin:3,swellFactor:1.10,notes:'Standard reinforced concrete'},
+    'RCP Class IV':{type:'Concrete Pipe',manningsN:0.013,material:'RCP',bedding:'Concrete Cradle',coverMin:3,swellFactor:1.10,notes:'Heavy-duty, load-rated'},
+    'Precast Box Culvert 6x6':{type:'Precast Box',manningsN:0.012,material:'Concrete',bedding:'Concrete Cradle',coverMin:2,swellFactor:1.10,notes:'Precast reinforced box'},
+    'Oldcastle HDPE N-12':{type:'HDPE Pipe',manningsN:0.011,material:'HDPE',bedding:'Pea Gravel',coverMin:2,swellFactor:1.15,notes:'Lightweight corrugated HDPE'},
+  }},
+  'Jensen Precast':{logo:'Jensen',website:'www.jensenprecast.com',products:{
+    'Box Culvert 6x6':{type:'Precast Box',manningsN:0.012,material:'Concrete',bedding:'Concrete Cradle',coverMin:2,swellFactor:1.10,notes:'Precast reinforced concrete'},
+    'Box Culvert 10x10':{type:'Precast Box',manningsN:0.012,material:'Concrete',bedding:'Concrete Cradle',coverMin:3,swellFactor:1.10,notes:'Larger span culvert'},
+    'Box Culvert 12x12':{type:'Precast Box',manningsN:0.012,material:'Concrete',bedding:'Concrete Cradle',coverMin:3,swellFactor:1.10,notes:'Extra-large span box'},
+  }},
+  'Hobas (Fibercast/FRP)':{logo:'Hobas',website:'www.hobas.com',products:{
+    'Hobas CCFRP 8-48in':{type:'FRP Composite',manningsN:0.0095,material:'FRP',bedding:'Pea Gravel',coverMin:1.5,swellFactor:1.12,notes:'Corrosion-resistant FRP, smooth interior'},
+    'Hobas FlowLine CCFRP':{type:'FRP Pipe',manningsN:0.0095,material:'FRP',bedding:'Pea Gravel',coverMin:1.5,swellFactor:1.12,notes:'Joint-free, trenchless-ready'},
+    'Hobas DIPS Renewal':{type:'FRP Liner',manningsN:0.0095,material:'FRP',bedding:'None',coverMin:1,swellFactor:1.0,notes:'Trenchless pipe renewal'},
   }},
   'JM Eagle':{logo:'JME',website:'www.jmeagle.com',products:{
-    'PVC Schedule 40':{type:'PVC Pipe',manningsN:0.009,material:'PVC',bedding:'Bedding Sand',coverMin:2,swellFactor:1.10,notes:'Traditional PVC, durable, low cost'},
-    'IB PVC':{type:'PVC Injection-Molded',manningsN:0.009,material:'PVC IB',bedding:'Bedding Sand',coverMin:2,swellFactor:1.10,notes:'Injection-molded bell & spigot'},
+    'PVC Schedule 40 DR 18':{type:'PVC Pipe',manningsN:0.009,material:'PVC',bedding:'Bedding Sand',coverMin:2,swellFactor:1.10,notes:'Durable standard PVC'},
+    'IB PVC (Injection Bell)':{type:'PVC Pipe',manningsN:0.009,material:'PVC IB',bedding:'Bedding Sand',coverMin:2,swellFactor:1.10,notes:'Injection-molded bell'},
+    'DURALOCK PVC':{type:'PVC Pipe',manningsN:0.009,material:'PVC',bedding:'Bedding Sand',coverMin:2,swellFactor:1.10,notes:'High-durability PVC formulation'},
   }},
-  'Forterra':{logo:'Forterra',website:'www.forterra.com',products:{
-    'RCP Class III':{type:'Concrete Pipe',manningsN:0.013,material:'RCP',bedding:'Concrete Cradle',coverMin:3,swellFactor:1.10,notes:'Standard reinforced concrete pipe'},
-    'RCP Class IV':{type:'Concrete Pipe',manningsN:0.013,material:'RCP',bedding:'Concrete Cradle',coverMin:3,swellFactor:1.10,notes:'Heavy-duty, high loads'},
+  'Forterra (Rinker/Sonoco)':{logo:'Forterra',website:'www.forterra.com',products:{
+    'RCP Class III':{type:'Concrete Pipe',manningsN:0.013,material:'RCP',bedding:'Concrete Cradle',coverMin:3,swellFactor:1.10,notes:'Standard reinforced concrete'},
+    'RCP Class IV':{type:'Concrete Pipe',manningsN:0.013,material:'RCP',bedding:'Concrete Cradle',coverMin:3,swellFactor:1.10,notes:'Load-rated reinforced'},
+    'Forterra Box Culvert':{type:'Precast Box',manningsN:0.012,material:'Concrete',bedding:'Concrete Cradle',coverMin:2.5,swellFactor:1.10,notes:'Precast reinforced box'},
   }},
-  'Hanover Pipe':{logo:'Hanover',website:'www.hanover.com',products:{
-    'HP PVC DR 18':{type:'PVC Pipe',manningsN:0.009,material:'PVC',bedding:'Bedding Sand',coverMin:2,swellFactor:1.10,notes:'Pressure rated, durable'},
+  'Hanover Pipe Products':{logo:'Hanover',website:'www.hanover.com',products:{
+    'HP PVC DR 18':{type:'PVC Pipe',manningsN:0.009,material:'PVC',bedding:'Bedding Sand',coverMin:2,swellFactor:1.10,notes:'Pressure-rated PVC'},
     'HP Perforated PVC':{type:'PVC Perforated',manningsN:0.010,material:'PVC Perf',bedding:'Filter Fabric',coverMin:1.5,swellFactor:1.10,notes:'Drainage applications'},
+    'HP Smooth HDPE':{type:'HDPE Pipe',manningsN:0.011,material:'HDPE',bedding:'Pea Gravel',coverMin:2,swellFactor:1.15,notes:'HDPE alternative'},
   }},
-  'Northwest Pipe':{logo:'NWP',website:'www.nwpco.com',products:{
-    'DIPS Steel':{type:'Steel Pipe',manningsN:0.012,material:'Steel',bedding:'Concrete Cradle',coverMin:3,swellFactor:1.05,notes:'Corrugated steel, high strength'},
-    'CMP Steel':{type:'Corrugated Metal',manningsN:0.024,material:'Steel',bedding:'AASHTO Granular',coverMin:2,swellFactor:1.05,notes:'Traditional corrugated metal pipe'},
+  'Northwest Pipe Company':{logo:'NWP',website:'www.nwpco.com',products:{
+    'DIPS Steel Corrugated':{type:'Steel Pipe',manningsN:0.012,material:'Steel',bedding:'Concrete Cradle',coverMin:3,swellFactor:1.05,notes:'High-strength corrugated steel'},
+    'CMP Steel (Helical)':{type:'Corrugated Metal',manningsN:0.024,material:'Steel',bedding:'AASHTO Granular',coverMin:2,swellFactor:1.05,notes:'Traditional corrugated metal'},
+    'ALUM-A-SPAN Aluminum':{type:'Aluminum Pipe',manningsN:0.020,material:'Aluminum',bedding:'Granular',coverMin:2,swellFactor:1.05,notes:'Lightweight aluminum option'},
   }},
-  'Precast Inc.':{logo:'Precast',website:'www.precastinc.com',products:{
-    'Box Culvert 6x6':{type:'Precast Box',manningsN:0.012,material:'Concrete',bedding:'Concrete Cradle',coverMin:2,swellFactor:1.10,notes:'Precast reinforced concrete box'},
-    'Box Culvert 10x10':{type:'Precast Box',manningsN:0.012,material:'Concrete',bedding:'Concrete Cradle',coverMin:3,swellFactor:1.10,notes:'Larger span precast box'},
+  'Trinity Industries / Ameristar':{logo:'Trinity',website:'www.trinity.com',products:{
+    'CMP Corrugated Metal':{type:'Corrugated Metal',manningsN:0.024,material:'Steel',bedding:'AASHTO Granular',coverMin:2,swellFactor:1.05,notes:'Standard CMP, field-proven'},
+    'HDPE Corrugated':{type:'HDPE Corrugated',manningsN:0.024,material:'HDPE',bedding:'Pea Gravel',coverMin:2,swellFactor:1.15,notes:'Lightweight HDPE corrugated'},
+    'Box Culvert Steel':{type:'Steel Box',manningsN:0.013,material:'Steel',bedding:'Concrete Cradle',coverMin:2.5,swellFactor:1.05,notes:'Welded steel culvert box'},
   }},
-  'Polypipe':{logo:'Polypipe',website:'www.polypipe.com',products:{
-    'PP-KlassH Smooth':{type:'Polypropylene',manningsN:0.0095,material:'Polypropylene',bedding:'Pea Gravel',coverMin:1.5,swellFactor:1.12,notes:'Lightweight polypropylene'},
-    'PP-Micro':{type:'Polypropylene',manningsN:0.012,material:'Polypropylene',bedding:'Pea Gravel',coverMin:1.5,swellFactor:1.12,notes:'Smaller diameter micro-drainage'},
+  'Polypipe (Europe/Americas)':{logo:'Polypipe',website:'www.polypipe.com',products:{
+    'PP-KlassH Smooth':{type:'Polypropylene',manningsN:0.0095,material:'Polypropylene',bedding:'Pea Gravel',coverMin:1.5,swellFactor:1.12,notes:'Lightweight PP, smooth'},
+    'PP-KlassR Ribbed':{type:'Polypropylene',manningsN:0.012,material:'Polypropylene',bedding:'Pea Gravel',coverMin:1.5,swellFactor:1.12,notes:'Ribbed PP, stronger'},
+    'PP-Perforated':{type:'Polypropylene Perf',manningsN:0.010,material:'Polypropylene Perf',bedding:'Filter Fabric',coverMin:1.5,swellFactor:1.12,notes:'Drainage-grade PP'},
+  }},
+  'Flo-Tro (Hancor)':{logo:'Flo-Tro',website:'www.flo-tro.com',products:{
+    'Flo-Tro HDPE N-12':{type:'HDPE Pipe',manningsN:0.011,material:'HDPE',bedding:'Pea Gravel',coverMin:2,swellFactor:1.15,notes:'Single-wall HDPE'},
+    'Flo-Tro Dual Wall':{type:'HDPE Dual-Wall',manningsN:0.011,material:'HDPE DW',bedding:'Pea Gravel',coverMin:2,swellFactor:1.15,notes:'Double-wall interior/exterior'},
+    'Flo-Tro HDPE Perforated':{type:'HDPE Perforated',manningsN:0.012,material:'HDPE Perf',bedding:'Pea Gravel',coverMin:1.5,swellFactor:1.15,notes:'Drainage-grade HDPE'},
+  }},
+  'Amtec (FRP Pipe Systems)':{logo:'Amtec',website:'www.amtecpipe.com',products:{
+    'Amtec FRP-CS':{type:'FRP Composite',manningsN:0.0095,material:'FRP',bedding:'Pea Gravel',coverMin:1.5,swellFactor:1.12,notes:'Corrosion-resistant composite'},
+    'Amtec FRP Culvert':{type:'FRP Box',manningsN:0.0095,material:'FRP',bedding:'Pea Gravel',coverMin:1.5,swellFactor:1.12,notes:'FRP box culvert alternative'},
+  }},
+  'North American Pipe (NAP)':{logo:'NAP',website:'www.napipe.com',products:{
+    'NAP-PVC Schedule 40':{type:'PVC Pipe',manningsN:0.009,material:'PVC',bedding:'Bedding Sand',coverMin:2,swellFactor:1.10,notes:'Standard gravity-flow PVC'},
+    'NAP-CPVC':{type:'CPVC Pipe',manningsN:0.009,material:'CPVC',bedding:'Bedding Sand',coverMin:2,swellFactor:1.10,notes:'Chlorinated PVC, higher temp'},
+  }},
+  'Charlotte Pipe & Foundry':{logo:'Charlotte',website:'www.charlottepipe.com',products:{
+    'Charlotte PVC Schedule 40':{type:'PVC Pipe',manningsN:0.009,material:'PVC',bedding:'Bedding Sand',coverMin:2,swellFactor:1.10,notes:'Reliable PVC pipe'},
+    'Charlotte DWV PVC':{type:'PVC DWV',manningsN:0.010,material:'PVC',bedding:'Bedding Sand',coverMin:1.5,swellFactor:1.10,notes:'Drain/waste/vent applications'},
+  }},
+  'Vinidex (Iplex/Apio)':{logo:'Vinidex',website:'www.vinidex.com.au',products:{
+    'Vinidex PVC CLASS D':{type:'PVC Pipe',manningsN:0.009,material:'PVC',bedding:'Bedding Sand',coverMin:2,swellFactor:1.10,notes:'Australian/NZ PVC standard'},
+    'Vinidex HDPE':{type:'HDPE Pipe',manningsN:0.011,material:'HDPE',bedding:'Pea Gravel',coverMin:2,swellFactor:1.15,notes:'Polyethylene alternative'},
+  }},
+  'Aero Drainage':{logo:'Aero',website:'www.aerodrainage.com',products:{
+    'Aero HDPE Perforated':{type:'HDPE Perforated',manningsN:0.012,material:'HDPE Perf',bedding:'Pea Gravel',coverMin:1.5,swellFactor:1.15,notes:'Agricultural/residential drainage'},
+    'Aero PP Perforated':{type:'Polypropylene Perf',manningsN:0.010,material:'Polypropylene',bedding:'Filter Fabric',coverMin:1.5,swellFactor:1.12,notes:'Lightweight drainage pipe'},
+  }},
+  'Piedmont Plastics / Flair':{logo:'Piedmont',website:'www.piedmontplastics.com',products:{
+    'Flair HDPE N-12':{type:'HDPE Pipe',manningsN:0.011,material:'HDPE',bedding:'Pea Gravel',coverMin:2,swellFactor:1.15,notes:'Single-wall corrugated HDPE'},
+    'Flair Dual-Wall HDPE':{type:'HDPE Dual-Wall',manningsN:0.011,material:'HDPE DW',bedding:'Pea Gravel',coverMin:2,swellFactor:1.15,notes:'Dual-wall construction'},
+  }},
+  'Lincoln Pipe & Foundry':{logo:'Lincoln',website:'www.lincolnpipe.com',products:{
+    'Lincoln Cast-Iron Class B':{type:'Cast Iron',manningsN:0.013,material:'Cast Iron',bedding:'Concrete Cradle',coverMin:3,swellFactor:1.05,notes:'Heavy-duty cast iron'},
+    'Lincoln Class C':{type:'Cast Iron',manningsN:0.013,material:'Cast Iron',bedding:'Concrete Cradle',coverMin:3,swellFactor:1.05,notes:'Standard gravity-flow CI'},
+  }},
+  'AMERICAN Corrugated Pipe':{logo:'ACP',website:'www.acppipe.com',products:{
+    'ACP CMP Standard':{type:'Corrugated Metal',manningsN:0.024,material:'Steel',bedding:'AASHTO Granular',coverMin:2,swellFactor:1.05,notes:'Field-proven CMP'},
+    'ACP Aluminum Pipe':{type:'Aluminum Pipe',manningsN:0.020,material:'Aluminum',bedding:'Granular',coverMin:2,swellFactor:1.05,notes:'Lightweight aluminum option'},
+  }},
+  'Contech Engineered Solutions (Competitor view)':{logo:'Contech',website:'www.contech.com',products:{
+    'HDPE N-12 (for competitive analysis)':{type:'HDPE Pipe',manningsN:0.011,material:'HDPE',bedding:'Pea Gravel',coverMin:2,swellFactor:1.15,notes:'Contech reference standard'},
   }},
 };
 
@@ -473,7 +536,7 @@ function selectCompetitorProduct(company, productName){
   S.compProduct=productName;
   S.manningsCp=prod.manningsN;
   const beddingMap={
-    'Bedding Sand':'sand','Pea Gravel':'pea','AASHTO Granular':'aashto','Concrete Cradle':'concrete','Filter Fabric':'filter'
+    'Bedding Sand':'sand','Pea Gravel':'pea','AASHTO Granular':'aashto','Concrete Cradle':'concrete','Filter Fabric':'filter','None':'none'
   };
   S.backfill.cpType=beddingMap[prod.bedding]||'sand';
   S.backfill.cpCover=prod.coverMin;
