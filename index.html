@@ -1302,6 +1302,13 @@ function whatsNewContent(){
     <button onclick="startTutorial()" style="padding:8px 18px;background:#0A3A64;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:background 0.2s" onmouseover="this.style.background='#062347'" onmouseout="this.style.background='#0A3A64'">▶ Run Example Project</button>
   </div>
 
+  ${rel('September 25, 2026',[
+    ['Backfill header summary stats','Volume and total cost badges now display at the top of each product&rsquo;s backfill block. Shows calculated CY and total $ at a glance without scrolling into input details.'],
+    ['Backfill cost advantage comparison','New winner summary at the bottom of Section 5: blue gradient highlight if Contech saves on backfill, neutral gray if competitor is cheaper. Displays dollar delta and side-by-side cost breakdown.'],
+    ['Blended backfill rates in summary','Trench Excavation Summary now calculates and displays the correct blended $/CY for both products, whether single-mode or dual-material. Dual-material backfill shows the weighted-average rate (e.g., 60% Material 1 @ $20 + 40% Material 2 @ $15 = $18/CY blended).'],
+    ['Dual-material backfill with allocation %','Toggle &ldquo;➕ Dual&rdquo; on the Contech backfill block to split material between two types. Drag allocation slider or type % directly; system calculates volumes for each material and blended cost in real time.'],
+  ])}
+
   ${rel('August 3, 2026',[
     ['Competitor Product Database','Browse and auto-select from 6 major manufacturers (ADS, JM Eagle, Forterra, Hanover, Northwest, Precast) with 15+ products. Each product auto-fills Manning&rsquo;s n, bedding type, swell factor, and cover depth \u2014 saves time and ensures accuracy. Organized by company and product type for fast navigation.'],
     ['Geolocation-smart regional defaults','Select a state on the Project Context screen and click &ldquo;Auto-Load Region Defaults&rdquo; to populate excavation costs, backfill pricing, and daily overhead rates for 7 U.S. regions (Northeast, Mid-Atlantic, Southeast, Midwest, Texas, Mountain West, Pacific). All values remain overridable.'],
