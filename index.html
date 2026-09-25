@@ -579,6 +579,210 @@ function applyRegionalDefaults(regionKey){
 const US_STATES=['AL','AK','AZ','AR','CA','CO','CT','DE','DC','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'];
 function newFit(){const o={};FITTINGS.forEach(f=>o[f.id]={on:false,qty:0,cost:f.cost});return o;}
 const APP_TYPES=['Culvert','Storm sewer','Sanitary sewer','Irrigation','Reline / sliplining','Underdrain / subdrain'];
+// ── Market & Application Talking Points (Win-Focused, 1-Page) ────────────────────
+const TALKING_POINTS={
+  'CMP':{
+    'Storm sewer':{
+      market:[
+        'CMP corrugations deliver superior hydraulic performance vs plastic alternatives—no upsizing required, no cost penalty.',
+        'Galvanized steel = 50+ year service life with full recyclability and lower embodied carbon than HDPE or concrete.',
+        'Contech-fabricated junctions arrive in 1 week vs. 6–8 weeks for precast—saves 5–7 weeks on critical path.'
+      ],
+      junctionBox:[
+        'Late design changes cost days, not two months. Contech fabricates custom angles, sizes, and configurations in days.',
+        'Fabricated CMP junctions are lighter than precast concrete—faster field installation, fewer equipment delays.',
+        'Every junction matched to CMP line material and galvanized coating—zero compatibility issues, zero callbacks.'
+      ],
+      contractor:[
+        'Rigid structure eliminates settling issues and reduces warranty costs vs. flexible alternatives.',
+        'Ready-to-install fittings with no field assembly = faster crews, fewer leak risks, higher profit margins.',
+        'Proven performance in rocky, compacted, and high-water conditions where plastic pipe struggles.'
+      ],
+      engineer:[
+        'Manning\'s n of 0.024 meets hydraulic design without upsizing vs. composite or plastic alternatives.',
+        'ASCE 7 seismic-compliant without additional bracing—meets modern structural codes easily.',
+        'Recyclable material supports LEED credits and third-party environmental product declarations (EPD).'
+      ]
+    },
+    'Culvert':{
+      market:[
+        'CMP culverts are the proven industry standard: lower cost, 75+ year track record, zero performance risk.',
+        'Galvanized coating survives coastal salt spray and aggressive soil chemistry without additional protection or maintenance.',
+        'Fast delivery on standard sizes accelerates timelines and reduces carrying costs vs. engineered alternatives.'
+      ],
+      contractor:[
+        'Arrives galvanized and ready to set—no field coating, no curing delays, no schedule slip.',
+        'Ring compression transfers loads to soil naturally—fewer support issues and callbacks.',
+        'Multiple suppliers = supply-chain confidence and no single-source dependency risk.'
+      ],
+      engineer:[
+        'ASTM A761 galvanized CMP proven across 50+ years and thousands of installations nationwide.',
+        'HDS 5 standardized headwall designs—Contech provides site-specific engineering at no cost.',
+        'End sections and custom cuts available, reducing field modifications and on-site improvisation risk.'
+      ]
+    }
+  },
+  'Ultra-Flo':{
+    'Storm sewer':{
+      market:[
+        'Ultra-Flo corrugations optimized for stormwater—Manning\'s n of 0.012 allows smaller diameters and lower material cost.',
+        'HDPE UV stability and inert chemistry deliver 50+ year service life with full recyclability in aggressive soil environments.',
+        'Lighter material reduces handling labor and equipment hours—lower installation cost on every project.'
+      ],
+      junctionBox:[
+        'Contech-fabricated junctions integrate seamlessly with Ultra-Flo line in 1 week—saves 5–7 weeks vs. precast alternatives.',
+        'Custom configurations and late design changes handled in days—no schedule risk from field changes.',
+        'Fully matched to Ultra-Flo material and wall thickness—thermal-fused connections and perfect compatibility.'
+      ],
+      contractor:[
+        'Lighter than CMP—smaller crane, faster laying, fewer equipment hours = higher profit per job.',
+        'Arrives ready to install; thermal fusion (socket) creates stronger, monolithic joints than mechanical couplers.',
+        'Inert to aggressive soils and landfill chemistry—install anywhere with confidence, no cathodic protection needed.'
+      ],
+      engineer:[
+        'Manning\'s n = 0.012 allows 1-2 size reductions vs. CMP—significant savings on material and excavation.',
+        'Flexible HDPE handles differential settlement without cracking—ideal for soft, compressible, or organic soils.',
+        'Non-conductive—no grounding or cathodic protection required on electrified project sites.'
+      ]
+    },
+    'Culvert':{
+      market:[
+        'HDPE culverts deliver corrosion immunity in coastal, industrial, and landfill environments—zero maintenance risk.',
+        'Lower density means fewer ton-miles shipped—green shipping profile and lower carbon footprint than metal or concrete.',
+        'Modular ring designs accelerate installation on multi-span culverts—faster schedule, lower labor cost.'
+      ],
+      contractor:[
+        'Significantly lighter than CMP—smaller crane, fewer crew hours, faster installation = competitive advantage.',
+        'No corrosion concerns in salt spray or high-iron soils—installs confidently in any environment.',
+        'Segmented rings fit easily in confined spaces and narrow embankments—access problems become non-issues.'
+      ],
+      engineer:[
+        'Smooth bore + mild corrugations = Manning\'s n of 0.012–0.015—efficient hydraulic design with minimal upsizing.',
+        'LSRM (Limiting Span-to-Rise Ratio) design optimizes wall thickness—no overspecification, full structural compliance.',
+        'Non-conductive construction—no electrical isolation or grounding requirements for energized sites.'
+      ]
+    }
+  }
+};
+
+function updateTalkingPointsButton(){
+  const btn=document.getElementById('talking-points-btn-container');
+  if(!btn)return;
+  const asel=document.getElementById('asel');
+  const psel=document.getElementById('psel');
+  const appType=asel?asel.value:'';
+  const projType=psel?psel.value:'';
+  if(appType&&projType){
+    btn.style.display='block';
+  } else {
+    btn.style.display='none';
+  }
+}
+function generateTalkingPointsPDF(){
+  if(!S.product || !S.appType){
+    alert('Please select both a Contech product and application type first.');
+    return;
+  }
+  const points=TALKING_POINTS[S.product]?.[S.appType];
+  if(!points){
+    alert('Talking points not available for this product and application combination.');
+    return;
+  }
+
+  const d=new Date();
+  const dateStr=d.toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+  const hasJunctionBox=S.appType==='Storm sewer' && points.junctionBox;
+  
+  const html=`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Market Talking Points - ${S.product}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.4; color: #333; background: #f5f5f5; }
+    .page { width: 8.5in; height: 11in; background: #fff; margin: 0 auto; padding: 0.4in; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden; }
+    .header { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 12px; border-bottom: 3px solid #0A3A64; padding-bottom: 10px; }
+    .logo { width: 60px; flex-shrink: 0; }
+    .logo svg { width: 100%; }
+    .header-text h1 { font-size: 20px; color: #0A3A64; margin-bottom: 2px; line-height: 1.1; }
+    .header-text p { font-size: 11px; color: #666; margin: 0; }
+    .meta { font-size: 10px; color: #999; margin-top: 2px; }
+    .section { margin-bottom: 10px; }
+    .section-title { font-size: 11px; font-weight: 700; color: #fff; background: #0A3A64; padding: 4px 8px; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.3px; }
+    .point { margin-bottom: 6px; padding-left: 14px; position: relative; }
+    .point:before { content: "▪"; position: absolute; left: 0; color: #2e9e5b; font-weight: 700; font-size: 12px; }
+    .point-text { font-size: 9px; line-height: 1.4; color: #333; }
+    .role-section { background: #f8f8f8; padding: 8px; border-left: 3px solid #0A3A64; margin-bottom: 8px; }
+    .role-title { font-size: 10px; font-weight: 700; color: #0A3A64; margin-bottom: 6px; }
+    .role-points { display: grid; gap: 5px; }
+    .role-point { font-size: 8px; line-height: 1.3; color: #555; padding-left: 14px; position: relative; }
+    .role-point:before { content: "•"; position: absolute; left: 0; color: #2e9e5b; font-weight: 700; }
+    .footer { margin-top: 8px; padding-top: 6px; border-top: 2px solid #e0e0e0; font-size: 8px; color: #999; line-height: 1.2; }
+    .email-link { color: #0A3A64; text-decoration: none; font-weight: 600; }
+    .email-link:hover { text-decoration: underline; }
+    @media print { body { background: none; } .page { margin: 0; box-shadow: none; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="header">
+      <div class="logo">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="50" cy="50" r="45" fill="none" stroke="#0A3A64" stroke-width="2"/>
+          <text x="50" y="58" font-size="24" font-weight="bold" text-anchor="middle" fill="#0A3A64">TIC</text>
+        </svg>
+      </div>
+      <div class="header-text">
+        <h1>${S.product} vs ${S.compProduct}</h1>
+        <p>${S.appType}</p>
+        <div class="meta">Generated ${dateStr}</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Why Contech Wins</div>
+      ${points.market.map(pt=>`<div class="point"><div class="point-text">${pt}</div></div>`).join('')}
+    </div>
+
+    ${hasJunctionBox?`<div class="section">
+      <div class="section-title">Junction Box Advantage (Time & Cost Saver)</div>
+      ${points.junctionBox.map(pt=>`<div class="point"><div class="point-text">${pt}</div></div>`).join('')}
+    </div>`:''}
+
+    <div class="section">
+      <div class="section-title">Contractor Value</div>
+      <div class="role-points">
+        ${points.contractor.map(pt=>`<div class="role-point">${pt}</div>`).join('')}
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Engineer Value</div>
+      <div class="role-points">
+        ${points.engineer.map(pt=>`<div class="role-point">${pt}</div>`).join('')}
+      </div>
+    </div>
+
+    <div class="footer">
+      <p style="margin-bottom: 3px;">Have a strong talking point? <a class="email-link" href="mailto:robert.chapman@conteches.com?subject=TIC Talking Points">Share with Product Management</a></p>
+      <p>Total Install Compare (TIC) · Contech Engineered Solutions</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  // Use html2pdf from the PDF export section
+  if(typeof html2pdf!=='undefined'){
+    html2pdf().set({margin:0,filename:`${S.product}-vs-${S.compProduct}.pdf`,image:{type:'jpeg',quality:0.98},html2canvas:{scale:2},jsPDF:{orientation:'portrait',unit:'in',format:'letter'}}).from(html).save();
+  } else {
+    // Fallback: open in new tab
+    const blob=new Blob([html],{type:'text/html'});
+    const url=URL.createObjectURL(blob);
+    const win=window.open(url,'_blank');
+    setTimeout(()=>URL.revokeObjectURL(url),5000);
+  }
+}
 const PROJ_TYPES={
   'Transportation':['Highway / roadway drainage','Bridge approach drainage','Airport drainage','Railway drainage'],
   'Municipal':['Municipal storm sewer system','Combined sewer overflow (CSO)','Wastewater collection','Water transmission'],
@@ -630,7 +834,7 @@ let S={product:null,compName:'',compProduct:'',appType:'',projType:'',projName:'
   exc:{ct:0,cp:0},inst:{ct:0,cp:0},instRateCt:0,instRateCp:0,dailyRate:0,spoils:{swell:25,truckCY:14,haulPerLoad:0,mode:'load',haulPerCY:0},
   visibleDiamLines:1,
     rcbLines:Array.from({length:15},()=>({cmpBarrels:1,cmpSpacing:0,cmpBedding:null,cmpWorkRoom:18,cmpCover:null,ctManning:0,cpBarrels:1,cpSpacing:0,cpBedding:null,cpWorkRoom:18,cpCover:null,cpManning:0,runs:1,runSpacing:0,bedding:12,workRoom:18,rcbCover:0,span:0,rise:0,wall:6,topSlab:6,botSlab:6,haunch:12,collapsed:true})),
-  backfill:{ctType:'',ctCost:0,ctRebar:false,ctRebarCost:REBAR_SUGGESTED_COST,cpType:'',cpCost:0,cpRebar:false,cpRebarCost:REBAR_SUGGESTED_COST},
+  backfill:{ctType:'',ctCost:0,ctRebar:false,ctRebarCost:REBAR_SUGGESTED_COST,cpType:'',cpCost:0,cpRebar:false,cpRebarCost:REBAR_SUGGESTED_COST,dualMode:false,ctMat1Type:'',ctMat1Cost:0,ctMat1Pct:60,ctMat2Type:'',ctMat2Cost:0,cpMat1Type:'',cpMat1Cost:20,cpMat1Pct:60,cpMat2Type:'',cpMat2Cost:20},
   jb:{ctUnit:0,ctQty:0,pcUnit:0,pcQty:0},
   fit:{ct:newFit(),cp:newFit()},
   rcb:{span:0,rise:0,wall:4,topSlab:4,botSlab:4,haunch:4,runs:1,runSpacing:0,bedding:12,workRoom:18,
@@ -1091,6 +1295,12 @@ function whatsNewContent(){
   return `<div class="g-wrap">
   <div class="g-hdr"><img src="${CONTECH_LOGO}" alt="Contech"><div class="g-h1">What&rsquo;s New &mdash; Feature Updates</div></div>
   <div class="g-sub">Value-add capabilities recently added to the Total Install Compare tool, newest first.</div>
+  
+  <div style="background:#f0f7ff;border:1.5px solid #0A3A64;border-radius:6px;padding:16px;margin-bottom:20px">
+    <div style="font-weight:600;color:#0C3460;margin-bottom:8px">🎯 New User? Try the Interactive Tutorial</div>
+    <div style="font-size:12px;color:#333;margin-bottom:12px">Walk through a complete real-world example (Ultra-Flo vs HDPE N-12) with guided callouts at every step. Perfect for learning how to use TIC.</div>
+    <button onclick="startTutorial()" style="padding:8px 18px;background:#0A3A64;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:background 0.2s" onmouseover="this.style.background='#062347'" onmouseout="this.style.background='#0A3A64'">▶ Run Example Project</button>
+  </div>
 
   ${rel('August 3, 2026',[
     ['Competitor Product Database','Browse and auto-select from 6 major manufacturers (ADS, JM Eagle, Forterra, Hanover, Northwest, Precast) with 15+ products. Each product auto-fills Manning&rsquo;s n, bedding type, swell factor, and cover depth \u2014 saves time and ensures accuracy. Organized by company and product type for fast navigation.'],
@@ -1134,6 +1344,243 @@ function whatsNewContent(){
   <div class="g-foot"><span>Contech Engineered Solutions &middot; Total Install Compare</span><span>Questions or feature requests? Contact your tool administrator.</span></div>
   </div>`;
 }
+// ── Tutorial System ─────────────────────────────────────────
+let tutorialStep=0;
+let tutorialActive=false;
+const TUTORIAL_STEPS=[
+  {step:0,title:'Welcome to TIC Training',subtitle:'Interactive Example: Ultra-Flo vs HDPE N-12',content:'Learn how to build a complete installed-cost comparison in 60 seconds. Follow along as we walk through real-world assumptions for a 30-inch stormwater pipe project.'},
+  {step:1,title:'Step 1: Project Context',subtitle:'Tell the story: where are we building?',content:'Enter project name, city, state, and application type. These carry through to your summary and saved file names. We\'re building a gravity storm sewer in Denver, Colorado.',action:'step1'},
+  {step:2,title:'Step 2: Select Products',subtitle:'Contech: Ultra-Flo | Competitor: HDPE N-12',content:'Choose your Contech product and a competitor to compare against. The app auto-fills defaults for bedding, Manning\'s n, and swell factor.',action:'step2'},
+  {step:3,title:'Step 3: Trench Geometry & Pipe Size',subtitle:'Build the line item: 30" diameter, 3000 linear feet',content:'Start with a substantial project: 30-inch diameter pipe, 3000 linear feet long. Real designers size trenches for stability and working room. For a 30" pipe, we\'re using 4 feet deep and 4 feet wide (standard for this size in Denver area).',action:'step3'},
+  {step:4,title:'Step 4: Material Costs',subtitle:'The delivered pipe price, by product',content:'Material cost is the largest line item on most projects. Ultra-Flo comes in at $45/LF, and the competitor HDPE is $42/LF. Realistic pricing varies by region, season, and order volume.',action:'step4'},
+  {step:5,title:'Step 5: Excavation & Trench Costs',subtitle:'Labor + equipment to prepare the ground',content:'Based on the 4\' × 4\' trench and the calculated volume for 3000 linear feet (~3200 CY for our project), excavation runs about $10/CY in the Mountain West. This includes equipment, labor, and site prep.',action:'step5'},
+  {step:6,title:'Step 6: Spoils & Haul-Off',subtitle:'Where does all that dirt go?',content:'With 25% swell factor (loose soil takes more volume than bank), we generate spoils that must be hauled off-site at ~$18/truck. Each truck holds 14 CY. Disposal cost flows straight into the total installed cost.',action:'step6'},
+  {step:7,title:'Step 7a: Backfill for Ultra-Flo',subtitle:'Part 1: Enable dual materials for realism',content:'Real contractors often layer backfill for compaction and stability. Ultra-Flo gets 60% crushed stone (cheaper, stable) and 40% pea gravel (cleaner, protects pipe). Click the ➕ Dual button to enable.',action:'step7a'},
+  {step:8,title:'Step 7b: Backfill for Ultra-Flo',subtitle:'Part 2: Fill in materials & split',content:'Crushed stone runs $25/CY, pea gravel $16/CY. The 60/40 split saves on material cost while keeping the pipe protected. Each material shows its share of the volume and total cost.',action:'step7b'},
+  {step:9,title:'Step 7c: Backfill for HDPE',subtitle:'HDPE uses 100% crushed stone backfill',content:'For comparison, HDPE N-12 uses 100% crushed stone backfill at $25/CY—cost advantage via bulk material selection, but less protective layering. Real designers choose based on project risk and budget.',action:'step7c'},
+  {step:10,title:'Step 8: Installation Schedule',subtitle:'Labor cost tied to production rate',content:'Realistic installation rates: 175 LF/day for both pipe types. Enter $950/day for contractor overhead (crew, equipment, travel, supervision). Faster installation = lower labor cost.',action:'step8'},
+  {step:11,title:'Step 9: Results & Savings',subtitle:'Now view the installed-cost summary',content:'Scroll down to see the impact-first comparison: total cost, savings amount, percent savings, and blended $/LF. Ultra-Flo\'s dual-layer backfill costs more upfront but offers better long-term performance—a story you can tell your customer.',action:'results'},
+];
+
+function startTutorial(){
+  tutorialActive=true;
+  tutorialStep=0;
+  document.getElementById('wn-modal')?.remove();
+  // Reset and start fresh
+  reset();
+  showTutorialStep();
+}
+
+function showTutorialStep(){
+  const step=TUTORIAL_STEPS[tutorialStep];
+  if(!step)return closeTutorial();
+  
+  // Close any open modals
+  document.querySelectorAll('[id$="-modal"]').forEach(m=>{if(m.id!=='tutorial-modal')m.remove();});
+  
+  const ex=document.getElementById('tutorial-modal');
+  if(ex)ex.remove();
+  
+  const m=document.createElement('div');
+  m.id='tutorial-modal';
+  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:2000;padding:18px';
+  
+  const progress=(tutorialStep+1)+' / '+(TUTORIAL_STEPS.length);
+  const isLast=tutorialStep===TUTORIAL_STEPS.length-1;
+  
+  m.innerHTML=`<div style="background:#fff;border-radius:12px;width:min(600px,95vw);max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.4)">
+    <div style="padding:18px;border-bottom:1px solid #ddd;flex-shrink:0">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
+        <div style="font-size:12px;color:#666;font-weight:600">TRAINING WALKTHROUGH</div>
+        <div style="font-size:12px;color:#999">${progress}</div>
+      </div>
+      <div style="width:100%;height:6px;background:#e8e8e8;border-radius:3px;overflow:hidden;margin-bottom:8px">
+        <div style="width:${(tutorialStep+1)/TUTORIAL_STEPS.length*100}%;height:100%;background:#0A3A64;transition:width 0.3s"></div>
+      </div>
+      <h2 style="margin:0;font-size:18px;color:#0A3A64;font-weight:700">${step.title}</h2>
+      <div style="font-size:13px;color:#555;margin-top:4px;font-weight:500">${step.subtitle}</div>
+    </div>
+    <div style="overflow-y:auto;padding:20px;flex:1">
+      <div style="font-size:14px;line-height:1.6;color:#333;margin-bottom:16px">${step.content}</div>
+      <div style="padding:12px;background:#fef5e7;border:1px solid #f9e79f;border-radius:6px"><div style="font-size:11px;color:#7d6608;font-weight:600">💡 Tip:</div><div style="font-size:12px;color:#7d6608;margin-top:4px">This step will auto-populate realistic values. Watch how each section connects to the final installed-cost total.</div></div>
+    </div>
+    <div style="padding:16px;border-top:1px solid #ddd;display:flex;gap:10px;justify-content:flex-end;flex-shrink:0">
+      <button onclick="closeTutorial()" style="padding:8px 16px;background:#e8e8e8;color:#333;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Exit</button>
+      ${tutorialStep>0?`<button onclick="tutorialStep--;showTutorialStep()" style="padding:8px 16px;background:#f0f0f0;color:#333;border:1px solid #ccc;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">← Back</button>`:''}
+      <button onclick="nextTutorialStep()" style="padding:8px 18px;background:#0A3A64;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;transition:background 0.2s" onmouseover="this.style.background='#062347'" onmouseout="this.style.background='#0A3A64'">${isLast?'Finish & View Results':'Next ▶'}</button>
+    </div>
+  </div>`;
+  
+  m.onclick=(e)=>{if(e.target===m)closeTutorial();};
+  document.body.appendChild(m);
+  
+  // Execute step-specific actions
+  setTimeout(()=>{executeTutorialStep(step.action);},300);
+}
+
+function executeTutorialStep(action){
+  switch(action){
+    case 'step1':
+      S.projName='Stormwater Outfall - Maple St';
+      S.projCity='Denver';
+      S.projState='CO';
+      S.appType='Gravity Storm Sewer';
+      const pname=document.getElementById('pname');
+      if(pname)pname.value=S.projName;
+      const pcity=document.getElementById('pcity');
+      if(pcity)pcity.value=S.projCity;
+      const pstate=document.getElementById('pstate');
+      if(pstate)pstate.value=S.projState;
+      const asel=document.getElementById('asel');
+      if(asel)asel.value=S.appType;
+      break;
+    case 'step2':
+      S.product='Ultra-Flo';
+      S.compName='JM Eagle';
+      S.compProduct='HDPE N-12';
+      const cn=document.getElementById('cn');
+      if(cn)cn.value=S.compName;
+      const cpn=document.getElementById('cpn');
+      if(cpn)cpn.value=S.compProduct;
+      // Product select via click
+      const tiles=document.querySelectorAll('.tile');
+      tiles.forEach(t=>{if(t.textContent.includes('Ultra-Flo'))t.click();});
+      break;
+    case 'step3':
+      S.diam.ct[0]={d:'30"',c:0,lf:3000};
+      S.diam.cp[0]={d:'30"',c:0,lf:3000};
+      for(let i=1;i<15;i++){
+        S.diam.ct[i]={d:'',c:0,lf:0};
+        S.diam.cp[i]={d:'',c:0,lf:0};
+      }
+      // Trench dimensions
+      S.rcbLines[0].ctManning=0.024;
+      S.rcbLines[0].cpManning=0.012;
+      S.rcbLines[0].bedding=12;
+      S.rcbLines[0].workRoom=18;
+      // Update display
+      showView('costs');
+      rCosts();
+      break;
+    case 'step4':
+      S.diam.ct[0].c=45;
+      S.diam.cp[0].c=42;
+      rCosts();
+      break;
+    case 'step5':
+      // Set excavation rate
+      S.exc.ct=9;
+      S.exc.cp=9;
+      // Set trench geometry defaults for the first diameter line
+      S.rcbLines[0].cmpBarrels=1;
+      S.rcbLines[0].cmpSpacing=0;
+      S.rcbLines[0].cmpBedding=4;
+      S.rcbLines[0].cmpWorkRoom=18;
+      S.rcbLines[0].cmpCover=1;
+      S.rcbLines[0].ctManning=0.012;
+      S.rcbLines[0].cpBarrels=1;
+      S.rcbLines[0].cpSpacing=0;
+      S.rcbLines[0].cpBedding=6;
+      S.rcbLines[0].cpWorkRoom=18;
+      S.rcbLines[0].cpCover=2;
+      S.rcbLines[0].cpManning=0.012;
+      rCosts();
+      break;
+    case 'step6':
+      S.spoils.swell=25;
+      S.spoils.truckCY=14;
+      S.spoils.mode='load';
+      S.spoils.haulPerLoad=18;
+      rCosts();
+      break;
+    case 'step7a':
+      S.backfill.dualMode=true;
+      rCosts();
+      break;
+    case 'step7b':
+      S.backfill.ctMat1Type='Crushed Stone';
+      S.backfill.ctMat1Cost=25;
+      S.backfill.ctMat1Pct=60;
+      S.backfill.ctMat2Type='Pea Gravel';
+      S.backfill.ctMat2Cost=16;
+      rCosts();
+      break;
+    case 'step7c':
+      S.backfill.cpMat1Type='Crushed Stone';
+      S.backfill.cpMat1Cost=25;
+      S.backfill.cpMat1Pct=100;
+      S.backfill.cpMat2Type='Pea Gravel';
+      S.backfill.cpMat2Cost=20;
+      rCosts();
+      break;
+    case 'step8':
+      S.instRateCt=175;
+      S.instRateCp=175;
+      S.dailyRate=950;
+      rCosts();
+      break;
+    case 'results':
+      closeTutorial();
+      setTimeout(()=>{
+        const summary=document.querySelector('[style*="impact-first"]')?.parentElement||document.querySelector('.summary-section');
+        if(summary){
+          summary.scrollIntoView({behavior:'smooth',block:'center'});
+          // Add visual pulse to summary
+          summary.style.animation='pulse 1s ease-in-out 3';
+        }
+        const msg='✅ Tutorial complete!\n\nCheck the summary below:\n• Ultra-Flo: Dual-layer backfill (60% crushed stone @ $25/CY + 40% pea gravel @ $16/CY)\n• HDPE N-12: 100% crushed stone backfill @ $25/CY\n• Total installed cost comparison across 3000 linear feet\n\nYour numbers are realistic and ready to customize with actual project data.';
+        setTimeout(()=>alert(msg),500);
+      },200);
+      return;
+  }
+}
+
+function nextTutorialStep(){
+  tutorialStep++;
+  if(tutorialStep>=TUTORIAL_STEPS.length){
+    closeTutorial(true);
+  } else {
+    showTutorialStep();
+  }
+}
+
+function closeTutorial(showOptions=false){
+  tutorialActive=false;
+  const modal=document.getElementById('tutorial-modal');
+  if(modal)modal.remove();
+  
+  if(showOptions){
+    // Show completion options - larger, more prominent
+    const m=document.createElement('div');
+    m.id='tutorial-completion-modal';
+    m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:3000;padding:18px';
+    m.innerHTML=`<div style="background:linear-gradient(135deg, #fff 0%, #f8f9fa 100%);border-radius:16px;width:min(650px,95vw);box-shadow:0 30px 80px rgba(0,0,0,.3);padding:48px;text-align:center">
+      <div style="font-size:48px;margin-bottom:16px">🎉</div>
+      <h2 style="margin:0 0 16px 0;font-size:28px;color:#0A3A64;font-weight:700">Tutorial Complete!</h2>
+      <p style="margin:0 0 36px 0;font-size:15px;color:#666;line-height:1.6;max-width:100%">Your example project is populated with realistic data across all sections. Choose your next step:</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:24px">
+        <button onclick="closeTutorialModal();showView('context');rContext()" style="padding:22px 24px;background:#f0f0f0;color:#0A3A64;border:2px solid #ddd;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.3s;text-align:center" onmouseover="this.style.background='#e8e8e8';this.style.borderColor='#0A3A64'" onmouseout="this.style.background='#f0f0f0';this.style.borderColor='#ddd'">
+          <div style="font-size:24px;margin-bottom:8px">📋</div>
+          <div>Review Data</div>
+          <div style="font-size:12px;color:#999;margin-top:8px;font-weight:500">Go back to check all inputs</div>
+        </button>
+        <button onclick="closeTutorialModal();showView('results');calculate()" style="padding:22px 24px;background:linear-gradient(135deg, #0A3A64 0%, #062347 100%);color:#fff;border:2px solid #0A3A64;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.3s;text-align:center;box-shadow:0 8px 24px rgba(10,58,100,.3)" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 12px 32px rgba(10,58,100,.4)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 8px 24px rgba(10,58,100,.3)'">
+          <div style="font-size:24px;margin-bottom:8px">📊</div>
+          <div>View Summary</div>
+          <div style="font-size:12px;color:#b8d4f1;margin-top:8px;font-weight:500">See installed-cost comparison</div>
+        </button>
+      </div>
+    </div>`;
+    m.onclick=(e)=>{if(e.target===m)closeTutorialModal();};
+    document.body.appendChild(m);
+  }
+}
+
+function closeTutorialModal(){
+  const modal=document.getElementById('tutorial-completion-modal');
+  if(modal)modal.remove();
+}
+
 function whatsNew(){
   const ex=document.getElementById('wn-modal');if(ex){ex.remove();return;}
   const m=document.createElement('div');
@@ -1272,6 +1719,10 @@ function savedListHtml(){
     <button onclick="openMarkup()" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:#b05a10;color:#fff;border:none;border-radius:var(--border-radius-md);font-size:11px;font-weight:600;cursor:pointer">
       <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 11l1-3.5L8.5 1 11 3.5 4.5 10 1 11z" stroke="#fff" stroke-width="1.1" stroke-linejoin="round"/><path d="M7.5 2l2.5 2.5" stroke="#fff" stroke-width="1.1"/></svg>
       Site Plan Markup
+    </button>
+    <button onclick="startTutorial()" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:#6b4a9e;color:#fff;border:none;border-radius:var(--border-radius-md);font-size:11px;font-weight:600;cursor:pointer">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1a5 5 0 110 10A5 5 0 016 1zm0 8V5m0-2.5h.01" stroke="#fff" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Run Example Project
     </button>
   </div>`;
   if(!saves.length)return `<div class="card ac" style="margin-bottom:.75rem">${fileRow}</div>`;
@@ -1466,12 +1917,25 @@ function trenchCalcs(){
 function jbTotal(side){return Object.entries(S.fit[side]).reduce((s,[id,v])=>s+(v.on?(v.qty||0)*(v.cost||0):0),0);}
 // Returns total $ backfill cost (lump sum, not $/LF)
 function backfillTotal(side){
-  const rate=side==='ct'?S.backfill.ctCost:S.backfill.cpCost;
   const type=side==='ct'?S.backfill.ctType:S.backfill.cpType;
   const rebar=side==='ct'?S.backfill.ctRebar:S.backfill.cpRebar;
   const rebarCost=side==='ct'?S.backfill.ctRebarCost:S.backfill.cpRebarCost;
   const cy=backfillCY(side);
-  const materialCost=(rate||0)*cy;
+  
+  let materialCost=0;
+  if(S.backfill.dualMode){
+    const mat1Cost=side==='ct'?S.backfill.ctMat1Cost:S.backfill.cpMat1Cost;
+    const mat1Pct=side==='ct'?S.backfill.ctMat1Pct:S.backfill.cpMat1Pct;
+    const mat2Cost=side==='ct'?S.backfill.ctMat2Cost:S.backfill.cpMat2Cost;
+    const mat2Pct=100-mat1Pct;
+    const vol1=Math.round((mat1Pct/100)*cy);
+    const vol2=cy-vol1;
+    materialCost=(vol1*mat1Cost)+(vol2*mat2Cost);
+  } else {
+    const rate=side==='ct'?S.backfill.ctCost:S.backfill.cpCost;
+    materialCost=(rate||0)*cy;
+  }
+  
   const rebarLumpSum=(type==='rcc'&&rebar)?(rebarCost||0)*totalLF(side):0;
   return materialCost+rebarLumpSum;
 }
@@ -1496,6 +1960,20 @@ function materialTotal(side){return S.diam[side].reduce((s,r)=>s+(r.c||0)*(r.lf|
 function excavationTotal(side){
   const rate=side==='ct'?S.exc.ct:S.exc.cp;
   return (rate||0)*excavationCY(side);
+}
+
+function backfillRateForDisplay(side){
+  // Returns the blended $/CY for display in summary
+  if(!S.backfill.dualMode){
+    return side==='ct'?S.backfill.ctCost:S.backfill.cpCost;
+  }
+  // Dual mode: calculate blended rate
+  const mat1Cost=side==='ct'?S.backfill.ctMat1Cost:S.backfill.cpMat1Cost;
+  const mat1Pct=side==='ct'?S.backfill.ctMat1Pct:S.backfill.cpMat1Pct;
+  const mat2Cost=side==='ct'?S.backfill.ctMat2Cost:S.backfill.cpMat2Cost;
+  const mat2Pct=100-mat1Pct;
+  const blendedRate=(mat1Cost*(mat1Pct/100))+(mat2Cost*(mat2Pct/100));
+  return blendedRate;
 }
 function otherPerLF(side){
   // Excavation, backfill, installation = lump sums; equipment removed → overhead handled via daily rate
@@ -1695,6 +2173,7 @@ function updateDiamTotals(side){
 }
 
 
+
 function backfillBlockHtml(side){
   const labelName=side==='ct'?S.product:(S.compName||'Competitor');
   const badgeClass=side==='ct'?'badge-ct':'badge-cp';
@@ -1703,12 +2182,45 @@ function backfillBlockHtml(side){
   const cost=side==='ct'?S.backfill.ctCost:S.backfill.cpCost;
   const rebar=side==='ct'?S.backfill.ctRebar:S.backfill.cpRebar;
   const rebarCost=side==='ct'?S.backfill.ctRebarCost:S.backfill.cpRebarCost;
+  const isDual=S.backfill.dualMode;
   let typeO='<option value="">Select backfill type...</option>';
   BACKFILL_TYPES.forEach(t=>typeO+=`<option value="${t.id}"${type===t.id?' selected':''}>${t.label}</option>`);
   const isRcc=type==='rcc';
+  
+  const mat1Type=side==='ct'?S.backfill.ctMat1Type:S.backfill.cpMat1Type;
+  const mat1Cost=side==='ct'?S.backfill.ctMat1Cost:S.backfill.cpMat1Cost;
+  const mat1Pct=side==='ct'?S.backfill.ctMat1Pct:S.backfill.cpMat1Pct;
+  const mat2Type=side==='ct'?S.backfill.ctMat2Type:S.backfill.cpMat2Type;
+  const mat2Cost=side==='ct'?S.backfill.ctMat2Cost:S.backfill.cpMat2Cost;
+  const mat2Pct=100-mat1Pct;
+  const cy=backfillCY(side);
+  const tot=backfillTotal(side);
+  const vol1=Math.round((mat1Pct/100)*cy);
+  const vol2=cy-vol1;
+  
+  const MATERIALS=['Pea Gravel','Crushed Stone','Bank Run','Select Fill','Sand','Recycled Asphalt'];
+  let matOpts=MATERIALS.map(m=>`<option value="${m}"${m===mat1Type?' selected':''}>${m}</option>`).join('');
+  let matOpts2=MATERIALS.map(m=>`<option value="${m}"${m===mat2Type?' selected':''}>${m}</option>`).join('');
+  
   return `<div class="eq-product-block">
-    <div class="eq-product-hdr"><span class="col-badge ${badgeClass}">${badgeText}</span><span class="col-title">${labelName}</span></div>
-    <div class="two-col">
+    <div class="eq-product-hdr" style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div>
+        <div style="margin-bottom:8px"><span class="col-badge ${badgeClass}">${badgeText}</span><span class="col-title">${labelName}</span></div>
+        <div style="display:flex;gap:20px;font-size:11px">
+          <div style="background:var(--color-background-secondary);padding:6px 10px;border-radius:4px">
+            <div style="color:var(--color-text-secondary);font-weight:600;text-transform:uppercase;margin-bottom:2px">Volume</div>
+            <div style="font-size:13px;font-weight:700;color:#0A3A64">${cy>0?cy.toLocaleString('en-US',{maximumFractionDigits:1}):'-'} CY</div>
+          </div>
+          <div style="background:var(--color-background-secondary);padding:6px 10px;border-radius:4px">
+            <div style="color:var(--color-text-secondary);font-weight:600;text-transform:uppercase;margin-bottom:2px">Total Cost</div>
+            <div style="font-size:13px;font-weight:700;color:#0A3A64">$${tot.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</div>
+          </div>
+        </div>
+      </div>
+      <button onclick="toggleDualBackfill('${side}')" style="background:none;border:none;color:#0A3A64;font-weight:600;cursor:pointer;font-size:12px;padding:4px 8px;display:${side==='ct'?'block':'none'};white-space:nowrap">${isDual?'✕ Single':'➕ Dual'}</button>
+    </div>
+    
+    ${!isDual?`<div class="two-col">
       <div class="inp-${side}">
         <div class="lbl">Backfill type</div>
         <select id="bf-type-${side}" onchange="S.backfill.${side==='ct'?'ctType':'cpType'}=this.value;rCosts()">${typeO}</select>
@@ -1719,16 +2231,41 @@ function backfillBlockHtml(side){
     </div>
     ${isRcc?`<div class="rebar-toggle${rebar?' on':''}" onclick="toggleRebar('${side}')">
       <div class="rebar-chk"><div class="rebar-chk-inner"></div></div>
-      <div class="rebar-lbl">Include rebar reinforcement <span style="color:var(--color-text-secondary)">— suggested $${REBAR_SUGGESTED_COST.toFixed(2)}/LF (#4 rebar, typical cage spacing)</span></div>
+      <div class="rebar-lbl">Include rebar reinforcement <span style="color:var(--color-text-secondary)">— suggested $${REBAR_SUGGESTED_COST.toFixed(2)}/LF</span></div>
     </div>
     ${rebar?`<div class="rebar-cost-input"><div class="lbl">Rebar cost ($/LF)</div><input type="number" id="bf-rebar-${side}" placeholder="${REBAR_SUGGESTED_COST.toFixed(2)}" min="0" step="0.01" value="${rebarCost||''}" oninput="S.backfill.${side==='ct'?'ctRebarCost':'cpRebarCost'}=+this.value||0;updateBackfillSub('${side}')"></div>`:''}`:''}
-    <div class="backfill-subtotal" id="bfsub-${side}">${(()=>{const cy=backfillCY(side),tot=backfillTotal(side),rate=side==='ct'?S.backfill.ctCost:S.backfill.cpCost;return cy>0?`Backfill volume: <strong>${cy.toLocaleString('en-US',{maximumFractionDigits:1})} CY</strong> &nbsp;·&nbsp; Total: <strong>$${tot.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</strong>`:rate>0?'<span style="color:#A32D2D;font-size:10px">Enter pipe dimensions in trench comparison to calculate backfill volume</span>':'Enter $/CY rate above — backfill volume from trench comparison';})()}</div>
+    <div class="backfill-subtotal" id="bfsub-${side}">${(()=>{const cy=backfillCY(side),tot=backfillTotal(side),rate=side==='ct'?S.backfill.ctCost:S.backfill.cpCost;return cy>0?`Backfill volume: <strong>${cy.toLocaleString('en-US',{maximumFractionDigits:1})} CY</strong> &nbsp;·&nbsp; Total: <strong>$${tot.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</strong>`:rate>0?'<span style="color:#A32D2D;font-size:10px">Enter pipe dimensions to calculate volume</span>':'Enter $/CY rate above';})()}</div>`:`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+      <div style="border:1.5px solid #0A3A64;background:#f0f7ff;border-radius:6px;padding:12px">
+        <div style="font-size:11px;font-weight:600;color:#0A3A64;text-transform:uppercase;margin-bottom:8px">Material #1</div>
+        <div style="margin-bottom:8px"><label style="font-size:10px;font-weight:600;color:#333">Type</label><select id="mat1-${side}" onchange="S.backfill.${side==='ct'?'ctMat1Type':'cpMat1Type'}=this.value;rCosts()" style="width:100%;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:12px">${matOpts}</select></div>
+        <div style="margin-bottom:8px"><label style="font-size:10px;font-weight:600;color:#333">$/CY</label><input type="number" id="cost1-${side}" value="${mat1Cost}" step="0.25" onchange="S.backfill.${side==='ct'?'ctMat1Cost':'cpMat1Cost'}=+this.value;rCosts()" onblur="S.backfill.${side==='ct'?'ctMat1Cost':'cpMat1Cost'}=+this.value;rCosts()" style="width:100%;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:12px"></div>
+        <div style="margin-bottom:8px"><label style="font-size:10px;font-weight:600;color:#333">Allocation %</label><div style="display:flex;gap:8px"><input type="range" id="pct1-${side}" min="0" max="100" value="${mat1Pct}" onchange="S.backfill.${side==='ct'?'ctMat1Pct':'cpMat1Pct'}=+this.value;rCosts();document.getElementById('pct1-input-${side}').value=this.value;document.getElementById('pct2-${side}').value=100-this.value;document.getElementById('pct2-input-${side}').value=100-this.value" style="flex:1;cursor:pointer"><input type="number" id="pct1-input-${side}" min="0" max="100" value="${mat1Pct}" onchange="S.backfill.${side==='ct'?'ctMat1Pct':'cpMat1Pct'}=+this.value;rCosts();document.getElementById('pct1-${side}').value=this.value;document.getElementById('pct2-${side}').value=100-this.value;document.getElementById('pct2-input-${side}').value=100-this.value" style="width:50px;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:12px;font-weight:600;text-align:center"></div></div>
+        <div style="font-size:12px;color:#0A3A64;font-weight:600;margin-top:8px"><strong>${Math.round(vol1)} CY</strong> @ $${mat1Cost.toFixed(2)}/CY = <strong>$${(Math.round(vol1)*mat1Cost).toLocaleString('en-US',{maximumFractionDigits:0})}</strong></div>
+      </div>
+      <div style="border:1.5px solid #e0e0e0;background:#fafbfc;border-radius:6px;padding:12px">
+        <div style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;margin-bottom:8px">Material #2</div>
+        <div style="margin-bottom:8px"><label style="font-size:10px;font-weight:600;color:#333">Type</label><select id="mat2-${side}" onchange="S.backfill.${side==='ct'?'ctMat2Type':'cpMat2Type'}=this.value;rCosts()" style="width:100%;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:12px">${matOpts2}</select></div>
+        <div style="margin-bottom:8px"><label style="font-size:10px;font-weight:600;color:#333">$/CY</label><input type="number" id="cost2-${side}" value="${mat2Cost}" step="0.25" onchange="S.backfill.${side==='ct'?'ctMat2Cost':'cpMat2Cost'}=+this.value;rCosts()" onblur="S.backfill.${side==='ct'?'ctMat2Cost':'cpMat2Cost'}=+this.value;rCosts()" style="width:100%;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:12px"></div>
+        <div style="margin-bottom:8px"><label style="font-size:10px;font-weight:600;color:#333">Allocation %</label><div style="display:flex;gap:8px"><input type="range" id="pct2-${side}" min="0" max="100" value="${mat2Pct}" onchange="S.backfill.${side==='ct'?'ctMat1Pct':'cpMat1Pct'}=100-this.value;rCosts();document.getElementById('pct2-input-${side}').value=this.value;document.getElementById('pct1-${side}').value=100-this.value;document.getElementById('pct1-input-${side}').value=100-this.value" style="flex:1;cursor:pointer"><input type="number" id="pct2-input-${side}" min="0" max="100" value="${mat2Pct}" onchange="S.backfill.${side==='ct'?'ctMat1Pct':'cpMat1Pct'}=100-this.value;rCosts();document.getElementById('pct2-${side}').value=this.value;document.getElementById('pct1-${side}').value=100-this.value;document.getElementById('pct1-input-${side}').value=100-this.value" style="width:50px;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:12px;font-weight:600;text-align:center"></div></div>
+        <div style="font-size:12px;color:#0A3A64;font-weight:600;margin-top:8px"><strong>${Math.round(vol2)} CY</strong> @ $${mat2Cost.toFixed(2)}/CY = <strong>$${(Math.round(vol2)*mat2Cost).toLocaleString('en-US',{maximumFractionDigits:0})}</strong></div>
+      </div>
+    </div>
+    <div class="backfill-subtotal" style="background:#e8f0f7;border-left:3px solid #0A3A64;padding:12px;border-radius:4px;margin-bottom:0" id="bfsub-${side}">
+      <div style="font-size:13px;font-weight:600;color:#0A3A64;margin-bottom:6px">Total: <strong>$${((vol1*mat1Cost)+(vol2*mat2Cost)).toLocaleString('en-US',{maximumFractionDigits:0})}</strong></div>
+      <div style="font-size:12px;color:#555">Blended rate: <strong style="color:#0A3A64;font-size:13px">$${cy>0?(((vol1*mat1Cost)+(vol2*mat2Cost))/cy).toFixed(2):'0.00'}/CY</strong></div>
+    </div>`}
   </div>`;
 }
+
 
 function toggleRebar(side){
   if(side==='ct')S.backfill.ctRebar=!S.backfill.ctRebar;
   else S.backfill.cpRebar=!S.backfill.cpRebar;
+  rCosts();
+}
+function toggleDualBackfill(side){
+  S.backfill.dualMode=!S.backfill.dualMode;
   rCosts();
 }
 function updateSchedCost(){
@@ -2274,6 +2811,24 @@ function rCosts(){
     <div class="divider"></div>
     ${backfillBlockHtml('cp')}
     <div style="display:flex;justify-content:flex-end;margin-top:4px">${tipHtml('Backfill cost is entered in $/CY. Volume is calculated automatically: excavated volume minus pipe/box open area &times; project linear feet, from the trench comparison above. Rebar cost ($/LF) is added on top when RCC with rebar is selected.')}</div>
+    ${(()=>{
+      const ctCY=backfillCY('ct'),cpCY=backfillCY('cp');
+      const ctTot=backfillTotal('ct'),cpTot=backfillTotal('cp');
+      const diff=Math.abs(ctTot-cpTot);
+      const ctWins=ctTot<cpTot;
+      if(ctCY>0&&cpCY>0){
+        const bgGrad=ctWins?'linear-gradient(135deg, #E6F1FB 0%, #F0F7FF 100%)':'linear-gradient(135deg, #f8f8f8 0%, #fafbfc 100%)';
+        const bdColor=ctWins?'#B5D4F4':'#ddd';
+        const titleColor=ctWins?'#0C3460':'#333';
+        const numColor=ctWins?'#0A3A64':'#666';
+        const detailColor=ctWins?'#185FA5':'#777';
+        const winText=ctWins?'Contech saves':'Competitor is cheaper';
+        const winAmount=ctWins?'$'+diff.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}):'$'+diff.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+        const details=ctWins?'Contech: $'+ctTot.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})+' vs. Competitor: $'+cpTot.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}):'Competitor: $'+cpTot.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})+' vs. Contech: $'+ctTot.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+        return '<div style="margin-top:16px;padding:16px;border-radius:8px;background:'+bgGrad+';border:2px solid '+bdColor+'"><div style="font-size:12px;font-weight:600;color:'+titleColor+';margin-bottom:8px">BACKFILL COST ADVANTAGE</div><div style="font-size:16px;font-weight:700;color:'+numColor+';margin-bottom:4px">'+winText+' <strong style="color:'+numColor+'">'+winAmount+'</strong></div><div style="font-size:11px;color:'+detailColor+';margin-top:6px">'+details+'</div></div>';
+      }
+      return '';
+    })()}
   </div>`;
 
   const instCard=`<div class="card ac" style="margin-bottom:.75rem"><div class="sh"><div class="sn">6</div><div><div class="st">Installation labor</div><div class="ss">Enter crew production rate to estimate project schedule and schedule cost advantage</div></div></div>
@@ -2374,6 +2929,17 @@ function rJBox(){
   document.getElementById('v-jbox').innerHTML=`<div class="jb-card">
     <div class="sh"><div class="sn" style="background:#1D9E75">JB</div><div><div class="st">Junction box & structure comparison</div><div class="ss">Storm sewer — select structures and fittings used per product</div></div></div>
     <div class="jb-header-strip"><div class="jb-icon"><div class="jb-icon-inner"></div></div><div><div class="jb-header-txt">Storm sewer application detected</div><div class="jb-header-sub">Select structures separately for each product — quantities and unit costs default from standard pricing but are fully editable</div></div></div>
+    <div style="background:linear-gradient(135deg, #0A3A64 0%, #1a4a7a 100%);color:#fff;padding:20px;border-radius:8px;margin-bottom:20px;display:flex;gap:20px;align-items:center">
+      <div style="flex:1">
+        <div style="font-size:24px;font-weight:700;color:#7dd3c0;margin-bottom:4px">6–8 weeks</div>
+        <div style="font-size:13px;color:#e8f0f7;font-weight:500">Typical junction box lead time</div>
+      </div>
+      <div style="font-size:32px;color:#7dd3c0;font-weight:600">→</div>
+      <div style="flex:1">
+        <div style="font-size:24px;font-weight:700;color:#7dd3c0;margin-bottom:4px">1 week</div>
+        <div style="font-size:13px;color:#e8f0f7;font-weight:500">Contech-fabricated CMP junctions and fittings</div>
+      </div>
+    </div>
     ${fitBlockHtml('ct')}
     <div class="divider"></div>
     ${fitBlockHtml('cp')}
@@ -2978,8 +3544,8 @@ function calculate(){
 
   const bfBlockPrint=`<div class="bf-block">
     <div class="bf-title">Backfill comparison</div>
-    <div class="bf-row"><span>Contech ${S.product} — ${bfTypeCtLbl}${S.backfill.ctType==='rcc'&&S.backfill.ctRebar?' (w/ rebar)':''}</span><span>${ctBfCY>0?ctBfCY.toLocaleString('en-US',{maximumFractionDigits:1})+' CY @ $'+S.backfill.ctCost.toFixed(2)+'/CY = $'+bfCt.toLocaleString('en-US',{maximumFractionDigits:0}):'$'+S.backfill.ctCost.toFixed(2)+'/CY (no volume entered)'}</span></div>
-    <div class="bf-row"><span>${cpLabel} — ${bfTypeCpLbl}${S.backfill.cpType==='rcc'&&S.backfill.cpRebar?' (w/ rebar)':''}</span><span>${cpBfCY>0?cpBfCY.toLocaleString('en-US',{maximumFractionDigits:1})+' CY @ $'+S.backfill.cpCost.toFixed(2)+'/CY = $'+bfCp.toLocaleString('en-US',{maximumFractionDigits:0}):'$'+S.backfill.cpCost.toFixed(2)+'/CY (no volume entered)'}</span></div>
+    <div class="bf-row"><span>Contech ${S.product} — ${bfTypeCtLbl}${S.backfill.ctType==='rcc'&&S.backfill.ctRebar?' (w/ rebar)':''}</span><span>${ctBfCY>0?ctBfCY.toLocaleString('en-US',{maximumFractionDigits:1})+' CY @ $'+backfillRateForDisplay('ct').toFixed(2)+'/CY = $'+bfCt.toLocaleString('en-US',{maximumFractionDigits:0}):'$'+backfillRateForDisplay('ct').toFixed(2)+'/CY (no volume entered)'}</span></div>
+    <div class="bf-row"><span>${cpLabel} — ${bfTypeCpLbl}${S.backfill.cpType==='rcc'&&S.backfill.cpRebar?' (w/ rebar)':''}</span><span>${cpBfCY>0?cpBfCY.toLocaleString('en-US',{maximumFractionDigits:1})+' CY @ $'+backfillRateForDisplay('cp').toFixed(2)+'/CY = $'+bfCp.toLocaleString('en-US',{maximumFractionDigits:0}):'$'+backfillRateForDisplay('cp').toFixed(2)+'/CY (no volume entered)'}</span></div>
   </div>`;
 
   const carbonBlockPrint=`<div class="carbon-block">
@@ -3033,7 +3599,7 @@ function calculate(){
           <div class="row"><span class="rl">Material total</span><span class="rv">\$${ctMatTotal.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>
           <div class="row"><span class="rl">Excavation & trenching</span><span class="rv">${ctExcCY>0?ctExcCY.toLocaleString('en-US',{maximumFractionDigits:1})+' CY @ $'+S.exc.ct.toFixed(2)+'/CY':'$'+S.exc.ct.toFixed(2)+'/CY (no volume)'}</span></div>
           <div class="row" style="padding-left:8px"><span class="rl" style="color:#777">Excavation total</span><span class="rv">\$${ctExcTotal.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>
-          <div class="row"><span class="rl">Backfill (${bfTypeCtLbl})</span><span class="rv">${ctBfCY>0?ctBfCY.toLocaleString('en-US',{maximumFractionDigits:1})+' CY @ $'+S.backfill.ctCost.toFixed(2)+'/CY':'$'+S.backfill.ctCost.toFixed(2)+'/CY (no volume)'}</span></div>
+          <div class="row"><span class="rl">Backfill (${bfTypeCtLbl})</span><span class="rv">${ctBfCY>0?ctBfCY.toLocaleString('en-US',{maximumFractionDigits:1})+' CY @ $'+backfillRateForDisplay('ct').toFixed(2)+'/CY':'$'+backfillRateForDisplay('ct').toFixed(2)+'/CY (no volume)'}</span></div>
           <div class="row" style="padding-left:8px"><span class="rl" style="color:#777">Backfill cost total</span><span class="rv">\$${bfCt.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>
           ${ctDays?`<div class="row"><span class="rl">Est. install time</span><span class="rv${ctW?' win-c':''}">${ctDays} days @ ${S.instRateCt} LF/day</span></div>`:''}
           ${ctOverhead>0?`<div class="row"><span class="rl">Est. Contractor Overhead</span><span class="rv">${ctDays} days × $${S.dailyRate.toLocaleString()}/day</span></div><div class="row" style="padding-left:8px"><span class="rl" style="color:#777">Overhead total</span><span class="rv">\$${ctOverhead.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>`:''}
@@ -3047,7 +3613,7 @@ function calculate(){
           <div class="row"><span class="rl">Material total</span><span class="rv">\$${cpMatTotal.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>
           <div class="row"><span class="rl">Excavation & trenching</span><span class="rv">${cpExcCY>0?cpExcCY.toLocaleString('en-US',{maximumFractionDigits:1})+' CY @ $'+S.exc.cp.toFixed(2)+'/CY':'$'+S.exc.cp.toFixed(2)+'/CY (no volume)'}</span></div>
           <div class="row" style="padding-left:8px"><span class="rl" style="color:#777">Excavation total</span><span class="rv">\$${cpExcTotal.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>
-          <div class="row"><span class="rl">Backfill (${bfTypeCpLbl})</span><span class="rv">${cpBfCY>0?cpBfCY.toLocaleString('en-US',{maximumFractionDigits:1})+' CY @ $'+S.backfill.cpCost.toFixed(2)+'/CY':'$'+S.backfill.cpCost.toFixed(2)+'/CY (no volume)'}</span></div>
+          <div class="row"><span class="rl">Backfill (${bfTypeCpLbl})</span><span class="rv">${cpBfCY>0?cpBfCY.toLocaleString('en-US',{maximumFractionDigits:1})+' CY @ $'+backfillRateForDisplay('cp').toFixed(2)+'/CY':'$'+backfillRateForDisplay('cp').toFixed(2)+'/CY (no volume)'}</span></div>
           <div class="row" style="padding-left:8px"><span class="rl" style="color:#777">Backfill cost total</span><span class="rv">\$${bfCp.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>
           ${S.showLabor&&cpOverhead>0?`<div class="row"><span class="rl">Est. Contractor Overhead</span><span class="rv">${cpDays} days × $${S.dailyRate.toLocaleString()}/day</span></div><div class="row" style="padding-left:8px"><span class="rl" style="color:#777">Overhead total</span><span class="rv">\$${cpOverhead.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>`:''}
           ${pcJbT>0?`<div class="row"><span class="rl">Structures & fittings</span><span class="rv">\$${pcJbT.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>`:''}
@@ -3222,8 +3788,8 @@ function calculate(){
 
   const ctExcCost=ctExcTot*(S.exc.ct||0);
   const cpExcCost=cpExcTot*(S.exc.cp||0);
-  const ctBfCost=ctBfTot*(S.backfill.ctCost||0);
-  const cpBfCost=cpBfTot*(S.backfill.cpCost||0);
+  const ctBfCost=ctBfTot*backfillRateForDisplay('ct');
+  const cpBfCost=cpBfTot*backfillRateForDisplay('cp');
   const ctHaul=spoilsCost('ct'), cpHaul=spoilsCost('cp');
   const ctTrenchTotal=ctExcCost+ctBfCost+ctHaul;
   const cpTrenchTotal=cpExcCost+cpBfCost+cpHaul;
@@ -3276,7 +3842,7 @@ function calculate(){
         </div>
         <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
           <div><div style="font-size:11px;font-weight:600;color:#185FA5">Backfill</div>
-          <div style="font-size:10px;color:#185FA5;margin-top:1px">${fmtCY3(ctBfTot)} @ \$${(S.backfill.ctCost||0).toFixed(2)}/CY</div></div>
+          <div style="font-size:10px;color:#185FA5;margin-top:1px">${fmtCY3(ctBfTot)} @ \$${backfillRateForDisplay('ct').toFixed(2)}/CY</div></div>
           <div style="font-size:16px;font-weight:700;color:#0C447C">${fmtDol(ctBfCost)}</div>
         </div>
         ${ctHaul>0?`<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
@@ -3298,7 +3864,7 @@ function calculate(){
         </div>
         <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
           <div><div style="font-size:11px;font-weight:600;color:var(--color-text-secondary)">Backfill</div>
-          <div style="font-size:10px;color:var(--color-text-secondary);margin-top:1px">${fmtCY3(cpBfTot)} @ \$${(S.backfill.cpCost||0).toFixed(2)}/CY</div></div>
+          <div style="font-size:10px;color:var(--color-text-secondary);margin-top:1px">${fmtCY3(cpBfTot)} @ \$${backfillRateForDisplay('cp').toFixed(2)}/CY</div></div>
           <div style="font-size:16px;font-weight:700;color:var(--color-text-primary)">${fmtDol(cpBfCost)}</div>
         </div>
         ${cpHaul>0?`<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
@@ -3443,7 +4009,7 @@ function reset(){
     diam:{ct:newDiamRows(),cp:newDiamRows()},
     exc:{ct:0,cp:0},inst:{ct:0,cp:0},instRateCt:0,instRateCp:0,dailyRate:0,spoils:{swell:25,truckCY:14,haulPerLoad:0,mode:'load',haulPerCY:0},
   rcbLines:Array.from({length:15},()=>({cmpBarrels:1,cmpSpacing:0,cmpBedding:null,cmpWorkRoom:18,cmpCover:null,ctManning:0,cpBarrels:1,cpSpacing:0,cpBedding:null,cpWorkRoom:18,cpCover:null,cpManning:0,runs:1,runSpacing:0,bedding:12,workRoom:18,rcbCover:0,span:0,rise:0,wall:6,topSlab:6,botSlab:6,haunch:12,collapsed:true})),
-    backfill:{ctType:'',ctCost:0,ctRebar:false,ctRebarCost:REBAR_SUGGESTED_COST,cpType:'',cpCost:0,cpRebar:false,cpRebarCost:REBAR_SUGGESTED_COST},
+    backfill:{ctType:'',ctCost:0,ctRebar:false,ctRebarCost:REBAR_SUGGESTED_COST,cpType:'',cpCost:0,cpRebar:false,cpRebarCost:REBAR_SUGGESTED_COST,dualMode:false,ctMat1Type:'',ctMat1Cost:0,ctMat1Pct:60,ctMat2Type:'',ctMat2Cost:0,cpMat1Type:'',cpMat1Cost:20,cpMat1Pct:60,cpMat2Type:'',cpMat2Cost:20},
     jb:{ctUnit:0,ctQty:0,pcUnit:0,pcQty:0},
     fit:{ct:newFit(),cp:newFit()},
     rcb:{span:0,rise:0,wall:4,topSlab:4,botSlab:4,haunch:4,runs:1,runSpacing:0,bedding:12,workRoom:18,
